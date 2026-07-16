@@ -1,0 +1,133 @@
+@import "tailwindcss";
+
+/* ---- Design tokens (from Brainfy Languages AI design) ---- */
+@theme {
+  --color-cream: #f1efea;
+  --color-cream-soft: #faf9fe;
+  --color-ink: #191817;
+  --color-ink-soft: #2b2926;
+  --color-sidebar: #17161c;
+  --color-panel: #211f2b;
+  --color-panel-deep: #141319;
+
+  --color-brand: #5b4be8;
+  --color-brand-light: #7c6cf6;
+  --color-brand-deep: #4536cf;
+  --color-brand-tint: #eeebfd;
+
+  --color-muted: #8b887f;
+  --color-muted-dark: #6b6862;
+  --color-line: #e7e4dd;
+  --color-line-2: #e4e1da;
+
+  --color-coral: #ff6b4a;
+  --color-coral-deep: #e14e2a;
+  --color-mint: #3ee08b;
+  --color-green: #1fa971;
+  --color-gold: #f5a524;
+  --color-gold-deep: #c6890a;
+  --color-blue: #3b6fe0;
+  --color-blue-light: #5aa9ff;
+
+  --font-display: "Schibsted Grotesk", system-ui, sans-serif;
+  --font-sans: "Plus Jakarta Sans", system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+body {
+  font-family: var(--font-sans);
+  background: var(--color-cream);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+}
+a {
+  color: var(--color-brand);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--color-brand-deep);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #d9d6cf;
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #c4c0b6;
+  background-clip: content-box;
+}
+
+/* ---- Reusable brand gradient ---- */
+.grad-brand {
+  background: linear-gradient(135deg, #7c6cf6, #5b4be8);
+}
+.grad-brand-3 {
+  background: linear-gradient(135deg, #7c6cf6, #5b4be8 55%, #4127c9);
+}
+
+/* ---- Keyframes from design ---- */
+@keyframes brf-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+}
+@keyframes brf-ring {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+@keyframes brf-wave {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+@keyframes brf-fade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.anim-fade {
+  animation: brf-fade 0.4s ease;
+}
+.anim-pulse {
+  animation: brf-pulse 2.6s ease-in-out infinite;
+}
+.anim-caret {
+  animation: brf-pulse 1s steps(2) infinite;
+}

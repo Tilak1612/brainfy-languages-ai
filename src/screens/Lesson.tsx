@@ -1,0 +1,205 @@
+import { useMemo, useState } from "react";
+import type { Screen } from "../data";
+import { BackIcon, SkipIcon, CubeIcon, SparkleIcon } from "../components/icons";
+import { lessonItems, type BuilderItem } from "../content/learning";
+import { actions } from "../lib/store";
+
+type Feedback = null | "correct" | "wrong";
+
+function shuffle<T>(a: T[]): T[] {
+  const b = [...a];
+  for (let i = b.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [b[i], b[j]] = [b[j], b[i]];
+  }
+  return b;
+}
+
+export default function Lesson({ onNavigate }: { onNavigate: (s: Screen) => void }) {
+  const [idx, setIdx] = useState(0);
+  const [picked, setPicked] = useState<string[]>([]);
+  const [feedback, setFeedback] = useState<Feedback>(null);
+  const [done, setDone] = useState(false);
+  const [earned, setEarned] = useState(0);
+
+  const item: BuilderItem = lessonItems[idx];
+  const bank = useMemo(() => shuffle(item.bank), [item.id]);
+  const tokens = picked.map((p) => p.split("#")[0]);
+
+  function pick(word: string, i: number) {
+    if (feedback) return;
+    setPicked([...picked, word + "#" + i]);
+  }
+  function unpick(tok: string) {
+    if (feedback) return;
+    setPicked(picked.filter((p) => p !== tok));
+  }
+
+  function check() {
+    const correct = JSON.stringify(tokens) === JSON.stringify(item.answer);
+    setFeedback(correct ? "correct" : "wrong");
+    actions.recordAnswer(item.skill, correct);
+    if (correct) {
+      const xp = 10;
+      actions.addXp(xp);
+      setEarned((e) => e + xp);
+    }
+  }
+
+  function next() {
+    setFeedback(null);
+    setPicked([]);
+    if (idx + 1 >= lessonItems.length) {
+      actions.completeLesson();
+      actions.registerActivity(4);
+      setDone(true);
+    } else {
+      setIdx(idx + 1);
+    }
+  }
+
+  if (done) {
+    return (
+      <div className="anim-fade mx-auto max-w-[560px] text-center">
+        <div className="mb-6 mt-10 inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-[linear-gradient(135deg,#34C3A0,#1FA971)] text-white">
+          <SparkleIcon size={36} color="#fff" />
+        </div>
+        <h1 className="m-0 font-display text-[30px] font-extrabold tracking-[-.025em]">Lesson complete!</h1>
+        <p className="mt-2 text-[15px] text-[#6b6862]">
+          Nice work. You earned <b className="text-brand">+{earned} XP</b> and kept your streak alive.
+        </p>
+        <div className="mt-8 flex justify-center gap-3">
+          <button
+            onClick={() => onNavigate("review")}
+            className="rounded-[13px] border border-[#E4E1DA] bg-white px-6 py-3 text-[14px] font-bold text-[#4b4842] transition hover:bg-[#f3f1ec]"
+          >
+            Review vocabulary
+          </button>
+          <button
+            onClick={() => onNavigate("dashboard")}
+            className="grad-brand rounded-[13px] px-6 py-3 text-[14px] font-bold text-white transition hover:brightness-[1.07]"
+          >
+            Back to dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="anim-fade mx-auto max-w-[820px]">
+      <div className="mb-6 flex items-center gap-3.5">
+        <button
+          onClick={() => onNavigate("dashboard")}
+          className="flex h-10 w-10 items-center justify-center rounded-[11px] border border-[#E4E1DA] bg-white text-[#4b4842] transition hover:bg-[#e9e6df]"
+        >
+          <BackIcon size={18} />
+        </button>
+        <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-[#E4E1DA]">
+          <div
+            className="h-full rounded-full bg-[linear-gradient(90deg,#8B7CF6,#5B4BE8)] transition-[width] duration-300"
+            style={{ width: `${(idx / lessonItems.length) * 100}%` }}
+          />
+        </div>
+        <div className="text-[13.5px] font-bold text-[#8b887f]">
+          {idx + 1} / {lessonItems.length}
+        </div>
+      </div>
+
+      <div className="rounded-[24px] border border-[#E7E4DD] bg-white px-9 py-[38px] shadow-[0_1px_2px_rgba(20,20,30,.04)]">
+        <div className="mb-[22px] inline-flex items-center gap-[7px] rounded-full bg-brand-tint px-3 py-1.5 text-[12px] font-extrabold tracking-[.03em] text-brand">
+          SENTENCE BUILDER
+        </div>
+        <div className="mb-2 text-[14px] font-semibold text-[#8b887f]">{item.hint}</div>
+        <h2 className="m-0 mb-[30px] font-display text-[28px] font-bold tracking-[-.02em]">{item.prompt}</h2>
+
+        {/* Answer slots */}
+        <div
+          className={[
+            "mb-6 flex min-h-[64px] flex-wrap items-center gap-[9px] border-b-2 border-dashed pb-4 transition-colors",
+            feedback === "correct" ? "border-green" : feedback === "wrong" ? "border-coral-deep" : "border-[#D8D4CC]",
+          ].join(" ")}
+        >
+          {picked.map((p) => (
+            <button
+              key={p}
+              onClick={() => unpick(p)}
+              className="rounded-xl bg-brand-tint px-4 py-[11px] text-[15.5px] font-bold text-brand-deep transition hover:opacity-70"
+            >
+              {p.split("#")[0]}
+            </button>
+          ))}
+          {picked.length === 0 && <span className="text-[14px] text-[#b8b4ab]">Tap words to build the sentence…</span>}
+        </div>
+
+        {/* Word bank */}
+        <div className="mb-[30px] flex flex-wrap gap-[11px]">
+          {bank.map((w, i) =>
+            picked.includes(w + "#" + i) ? (
+              <span key={w + i} className="rounded-xl border-[1.5px] border-transparent bg-[#f3f1ec] px-[17px] py-[11px] text-[15.5px] font-bold text-[#c9c5bc]">
+                {w}
+              </span>
+            ) : (
+              <button
+                key={w + i}
+                onClick={() => pick(w, i)}
+                className="rounded-xl border-[1.5px] border-[#E4E1DA] bg-white px-[17px] py-[11px] text-[15.5px] font-bold text-ink transition hover:border-brand hover:text-brand-deep"
+              >
+                {w}
+              </button>
+            ),
+          )}
+        </div>
+
+        {/* Feedback banner */}
+        {feedback === "correct" && (
+          <div className="mb-5 rounded-[14px] border border-[#B8E6D2] bg-[#E3F6EE] px-4 py-3 text-[14px] font-semibold text-green">
+            ¡Correcto! +10 XP
+          </div>
+        )}
+        {feedback === "wrong" && (
+          <div className="mb-5 rounded-[14px] border border-[#FADDD2] bg-[#FFF6F3] px-4 py-3 text-[14px] text-[#5c4238]">
+            Not quite. Correct answer: <b>{item.answer.join(" ")}</b>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between gap-4">
+          <button
+            onClick={next}
+            className="flex items-center gap-[7px] text-[14px] font-bold text-[#8b887f] transition hover:text-ink"
+          >
+            <SkipIcon size={17} />
+            Skip
+          </button>
+          {feedback ? (
+            <button
+              onClick={next}
+              className="grad-brand rounded-[13px] px-[30px] py-[13px] text-[15px] font-bold text-white shadow-[0_10px_26px_-10px_rgba(91,75,232,.7)] transition hover:brightness-[1.07]"
+            >
+              Continue
+            </button>
+          ) : (
+            <button
+              onClick={check}
+              disabled={picked.length === 0}
+              className="grad-brand rounded-[13px] px-[30px] py-[13px] text-[15px] font-bold text-white shadow-[0_10px_26px_-10px_rgba(91,75,232,.7)] transition hover:brightness-[1.07] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Check
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-4 flex gap-3">
+        <button className="flex flex-1 items-center justify-center gap-2 rounded-[13px] border border-[#E4E1DA] bg-white py-[13px] text-[13.5px] font-bold text-[#4b4842] transition hover:bg-[#f3f1ec]">
+          <CubeIcon size={17} className="text-[#8b887f]" />
+          Hear it
+        </button>
+        <button className="flex flex-1 items-center justify-center gap-2 rounded-[13px] border border-[#E4E1DA] bg-white py-[13px] text-[13.5px] font-bold text-[#4b4842] transition hover:bg-[#f3f1ec]">
+          <SparkleIcon size={17} color="#8b887f" filled={false} />
+          Explain grammar
+        </button>
+      </div>
+    </div>
+  );
+}
