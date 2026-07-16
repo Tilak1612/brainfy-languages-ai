@@ -14,7 +14,10 @@ function brainfyApi(apiKey?: string): Plugin {
       server.middlewares.use("/api/health", (req, res, next) => {
         if (req.method !== "GET") return next();
         res.setHeader("content-type", "application/json");
-        res.end(JSON.stringify({ ai: !!apiKey }));
+        // Voice (STT/TTS) runs via Python serverless functions, which only exist
+        // under `vercel dev` or on Vercel — not plain `vite dev`. So report
+        // voice:false here; use `vercel dev` (or deploy) to exercise voice.
+        res.end(JSON.stringify({ ai: !!apiKey, voice: false }));
       });
 
       server.middlewares.use("/api/chat", (req, res, next) => {

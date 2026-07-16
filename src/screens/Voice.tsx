@@ -3,6 +3,7 @@ import { MicIcon, MicOffIcon, HangupIcon, SettingsBurstIcon, SparkleIcon } from 
 import { cafeScript } from "../content/learning";
 import { actions } from "../lib/store";
 import { checkAi, streamChat, MAYA_SYSTEM, type ChatMsg } from "../lib/chat";
+import { checkVoice, Recorder, transcribe, speak } from "../lib/voice";
 
 interface Msg {
   from: "maya" | "user";
@@ -15,9 +16,13 @@ const GREETING = "Hi Sofia! Great to see you. What did you get up to today?";
 
 export default function Voice() {
   const [aiReady, setAiReady] = useState<boolean | null>(null);
+  const [voiceReady, setVoiceReady] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const recRef = useRef<Recorder | null>(null);
 
   useEffect(() => {
     checkAi().then(setAiReady);
+    checkVoice().then(setVoiceReady);
   }, []);
 
   // ---- shared UI: call panel chrome ----
@@ -66,11 +71,11 @@ export default function Voice() {
     }
   }
 
-  // ---- AI send ----
-  async function send() {
-    const text = input.trim();
+  // ---- AI send (optionally driven by voice) ----
+  async function send(override?: string) {
+    const text = (override ?? input).trim();
     if (!text || busy) return;
-    setInput("");
+    if (override === undefined) setInput("");
     setBusy(true);
     setAiMsgs((m) => [...m, { from: "user", text }, { from: "maya", text: "" }]);
     apiMsgs.current.push({ role: "user", content: text });
@@ -87,6 +92,7 @@ export default function Voice() {
       actions.addXp(6);
       actions.registerActivity(1);
       setTip("Maya is a live AI tutor — speak freely and she'll adapt to you.");
+      if (voiceReady && reply) void speak(reply);
     } catch {
       setAiMsgs((m) => {
         const copy = [...m];
@@ -95,6 +101,31 @@ export default function Voice() {
       });
     } finally {
       setBusy(false);
+    }
+  }
+
+  // ---- microphone (voice input) ----
+  async function toggleMic() {
+    if (busy) return;
+    if (recording) {
+      setRecording(false);
+      try {
+        const pcm = await recRef.current!.stop();
+        const text = await transcribe(pcm);
+        if (text) await send(text);
+        else setTip("Didn't catch that — try again or type.");
+      } catch {
+        setTip("Couldn't process the audio — try again or type.");
+      }
+    } else {
+      try {
+        recRef.current = new Recorder();
+        await recRef.current.start();
+        setRecording(true);
+        setTip("Listening… tap the mic again when you're done speaking.");
+      } catch {
+        setTip("Microphone access was denied — you can type instead.");
+      }
     }
   }
 
@@ -200,16 +231,30 @@ export default function Voice() {
           {/* AI mode: free-text input */}
           {aiReady && !done && (
             <div className="mt-4 flex items-center gap-2 border-t border-[#EFECE5] pt-4">
+              {voiceReady && (
+                <button
+                  onClick={toggleMic}
+                  disabled={busy}
+                  title={recording ? "Stop and send" : "Speak to Maya"}
+                  className={`flex h-[40px] w-[40px] flex-none items-center justify-center rounded-[12px] border transition disabled:opacity-40 ${
+                    recording
+                      ? "border-coral-deep bg-[#FFEDE7] text-coral-deep animate-pulse"
+                      : "border-[#E4E1DA] bg-white text-brand hover:border-brand"
+                  }`}
+                >
+                  <MicIcon size={18} />
+                </button>
+              )}
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && send()}
-                disabled={busy}
-                placeholder="Say something to Maya…"
+                disabled={busy || recording}
+                placeholder={recording ? "Listening…" : "Say something to Maya…"}
                 className="flex-1 rounded-[12px] border border-[#E4E1DA] bg-white px-3.5 py-2.5 text-[13.5px] outline-none focus:border-brand disabled:opacity-60"
               />
               <button
-                onClick={send}
+                onClick={() => send()}
                 disabled={busy || !input.trim()}
                 className="grad-brand rounded-[12px] px-4 py-2.5 text-[13.5px] font-bold text-white transition hover:brightness-[1.06] disabled:cursor-not-allowed disabled:opacity-40"
               >
