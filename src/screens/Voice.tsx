@@ -13,6 +13,8 @@ interface Msg {
 
 const waveDelays = ["0s", ".15s", ".3s", ".45s", ".6s", ".75s", ".9s"];
 const GREETING = "Hi Sofia! Great to see you. What did you get up to today?";
+const DEFAULT_TIP =
+  'Use polite frames like "Could I…, please?" — Maya remembers what you practice.';
 
 export default function Voice() {
   const [aiReady, setAiReady] = useState<boolean | null>(null);
@@ -37,9 +39,7 @@ export default function Voice() {
 
   // ---- shared UI: call panel chrome ----
   const [done, setDone] = useState(false);
-  const [tip, setTip] = useState(
-    'Use polite frames like "Could I…, please?" — Maya remembers what you practice.',
-  );
+  const [tip, setTip] = useState(DEFAULT_TIP);
 
   useEffect(() => {
     if (done) return;
@@ -151,11 +151,10 @@ export default function Voice() {
 
   // ---- call controls ----
   function toggleMute() {
-    setMuted((m) => {
-      if (!m) stopSpeaking();
-      setTip(m ? "Maya's voice is back on." : "Maya is muted — you'll still see her replies.");
-      return !m;
-    });
+    const next = !muted;
+    if (next) stopSpeaking();
+    setMuted(next);
+    setTip(next ? "Maya is muted — you'll still see her replies." : "Maya's voice is back on.");
   }
 
   /** End the call, or start a fresh one after hanging up. */
@@ -167,7 +166,7 @@ export default function Voice() {
     setTip("Session ended. Press the green button to start a new one.");
   }
 
-  function restart() {
+  function restart(tipText = DEFAULT_TIP) {
     setDone(false);
     setElapsed(0);
     setStep(0);
@@ -175,19 +174,21 @@ export default function Voice() {
     setAiMsgs([{ from: "maya", text: GREETING }]);
     apiMsgs.current = [];
     setInput("");
-    setTip('Use polite frames like "Could I…, please?" — Maya remembers what you practice.');
+    setTip(tipText);
   }
 
   /** Swap between free AI conversation and the guided café role-play. */
   function toggleScenario() {
     stopSpeaking();
-    setScripted((s) => {
-      setTip(s
-        ? "Free conversation — say anything and Maya adapts to you."
-        : "Café role-play — pick the most natural reply at each step.");
-      return !s;
-    });
-    restart();
+    const next = !scripted;
+    setScripted(next);
+    // restart() owns the tip, so hand it the scenario message rather than
+    // setting it here and having it clobbered in the same batch.
+    restart(
+      next
+        ? "Café role-play — pick the most natural reply at each step."
+        : "Free conversation — say anything and Maya adapts to you.",
+    );
   }
 
   const aiMode = !!aiReady && !scripted;

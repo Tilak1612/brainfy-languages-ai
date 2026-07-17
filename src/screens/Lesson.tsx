@@ -1,8 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Screen } from "../data";
 import { BackIcon, SkipIcon, CubeIcon, SparkleIcon } from "../components/icons";
 import { lessonItems, type BuilderItem } from "../content/learning";
 import { actions } from "../lib/store";
+import { checkAi, streamChat, GRAMMAR_SYSTEM } from "../lib/chat";
+import { checkVoice, speak, stopSpeaking } from "../lib/voice";
 
 type Feedback = null | "correct" | "wrong";
 
@@ -22,9 +24,42 @@ export default function Lesson({ onNavigate }: { onNavigate: (s: Screen) => void
   const [done, setDone] = useState(false);
   const [earned, setEarned] = useState(0);
 
+  const [aiReady, setAiReady] = useState(false);
+  const [voiceReady, setVoiceReady] = useState(false);
+  const [explaining, setExplaining] = useState(false);
+  const [explanation, setExplanation] = useState("");
+
+  useEffect(() => {
+    checkAi().then(setAiReady);
+    checkVoice().then(setVoiceReady);
+    return stopSpeaking;
+  }, []);
+
   const item: BuilderItem = lessonItems[idx];
   const bank = useMemo(() => shuffle(item.bank), [item.id]);
   const tokens = picked.map((p) => p.split("#")[0]);
+  const target = item.answer.join(" ");
+
+  /** Read the target sentence aloud in Maya's voice. */
+  function hearIt() {
+    void speak(target);
+  }
+
+  /** Ask the grammar coach why the sentence is built the way it is. */
+  async function explainGrammar() {
+    if (explaining) return;
+    setExplaining(true);
+    setExplanation("");
+    try {
+      await streamChat(GRAMMAR_SYSTEM, [{ role: "user", content: target }], (delta) =>
+        setExplanation((e) => e + delta),
+      );
+    } catch {
+      setExplanation("Couldn't reach the grammar coach just now — try again in a moment.");
+    } finally {
+      setExplaining(false);
+    }
+  }
 
   function pick(word: string, i: number) {
     if (feedback) return;
@@ -49,6 +84,8 @@ export default function Lesson({ onNavigate }: { onNavigate: (s: Screen) => void
   function next() {
     setFeedback(null);
     setPicked([]);
+    setExplanation("");
+    stopSpeaking();
     if (idx + 1 >= lessonItems.length) {
       actions.completeLesson();
       actions.registerActivity(4);
@@ -191,15 +228,37 @@ export default function Lesson({ onNavigate }: { onNavigate: (s: Screen) => void
       </div>
 
       <div className="mt-4 flex gap-3">
-        <button className="flex flex-1 items-center justify-center gap-2 rounded-[13px] border border-[#E4E1DA] bg-white py-[13px] text-[13.5px] font-bold text-[#4b4842] transition hover:bg-[#f3f1ec]">
+        <button
+          onClick={hearIt}
+          disabled={!voiceReady}
+          title={voiceReady ? "Hear the sentence read aloud" : "Voice isn't configured on this server"}
+          className="flex flex-1 items-center justify-center gap-2 rounded-[13px] border border-[#E4E1DA] bg-white py-[13px] text-[13.5px] font-bold text-[#4b4842] transition hover:bg-[#f3f1ec] disabled:cursor-not-allowed disabled:opacity-40"
+        >
           <CubeIcon size={17} className="text-[#8b887f]" />
           Hear it
         </button>
-        <button className="flex flex-1 items-center justify-center gap-2 rounded-[13px] border border-[#E4E1DA] bg-white py-[13px] text-[13.5px] font-bold text-[#4b4842] transition hover:bg-[#f3f1ec]">
+        <button
+          onClick={explainGrammar}
+          disabled={!aiReady || explaining}
+          title={aiReady ? "Ask the grammar coach about this sentence" : "AI isn't configured on this server"}
+          className="flex flex-1 items-center justify-center gap-2 rounded-[13px] border border-[#E4E1DA] bg-white py-[13px] text-[13.5px] font-bold text-[#4b4842] transition hover:bg-[#f3f1ec] disabled:cursor-not-allowed disabled:opacity-40"
+        >
           <SparkleIcon size={17} color="#8b887f" filled={false} />
-          Explain grammar
+          {explaining ? "Explaining…" : "Explain grammar"}
         </button>
       </div>
+
+      {(explaining || explanation) && (
+        <div className="anim-fade mt-3 rounded-[16px] border border-[#DCD6FA] bg-[linear-gradient(135deg,#EEEBFD,#F4F2FE)] px-[18px] py-[17px]">
+          <div className="mb-2 flex items-center gap-2 text-[12.5px] font-extrabold tracking-[.04em] text-brand">
+            <SparkleIcon size={15} />
+            GRAMMAR COACH
+          </div>
+          <div className="text-[13.5px] leading-[1.55] text-[#3d3a52]">
+            {explanation || <span className="opacity-50">Thinking…</span>}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PlayIcon, MicIcon } from "../components/icons";
 import { actions } from "../lib/store";
+import { checkVoice, speak, stopSpeaking } from "../lib/voice";
+
+const PHRASE = "Could I have a table for two, please?";
 
 interface Ph {
   s: string;
@@ -36,6 +39,12 @@ function reroll(prev: Ph[]): Ph[] {
 export default function Pronunciation() {
   const [phs, setPhs] = useState<Ph[]>(BASE);
   const [attempt, setAttempt] = useState(1);
+  const [voiceReady, setVoiceReady] = useState(false);
+
+  useEffect(() => {
+    checkVoice().then(setVoiceReady);
+    return stopSpeaking;
+  }, []);
   // First render matches the original design exactly (83); recomputed after re-record.
   const overall = attempt === 1 ? 83 : Math.round(phs.reduce((a, p) => a + p.acc, 0) / phs.length);
   const dash = 389.5;
@@ -124,7 +133,12 @@ export default function Pronunciation() {
               </>
             )}
           </div>
-          <button className="mt-3.5 flex items-center gap-2 rounded-[11px] bg-[linear-gradient(135deg,#FF6B4A,#E14E2A)] px-4 py-2.5 text-[13px] font-bold text-white transition hover:brightness-[1.05]">
+          <button
+            onClick={() => void speak(PHRASE)}
+            disabled={!voiceReady}
+            title={voiceReady ? "Hear Léo say the phrase" : "Voice isn't configured on this server"}
+            className="mt-3.5 flex items-center gap-2 rounded-[11px] bg-[linear-gradient(135deg,#FF6B4A,#E14E2A)] px-4 py-2.5 text-[13px] font-bold text-white transition hover:brightness-[1.05] disabled:cursor-not-allowed disabled:opacity-40"
+          >
             <PlayIcon size={15} />
             Hear model
           </button>
