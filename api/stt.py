@@ -12,7 +12,11 @@ import urllib.request
 
 NVCF_SERVER = "grpc.nvcf.nvidia.com:443"
 FUNCTIONS_URL = "https://api.nvcf.nvidia.com/v2/nvcf/functions?visibility=public,authorized"
-ASR_PATTERN = os.environ.get("NVIDIA_ASR_PATTERN", r"parakeet|canary|nemotron-asr")
+# Pin an English CTC model by default. A bare /parakeet|canary/ matches
+# streaming-only and non-English NIMs (es/vi/zh), which reject offline en
+# requests. Override with NVIDIA_ASR_PATTERN.
+ASR_PATTERN = os.environ.get("NVIDIA_ASR_PATTERN", r"^ai-parakeet-ctc-1_1b-asr$")
+ASR_LANG = os.environ.get("NVIDIA_ASR_LANG", "en-US")
 
 _fid_cache = {}
 
@@ -52,16 +56,32 @@ class handler(BaseHTTPRequestHandler):
             cfg = rc.RecognitionConfig(
                 encoding=getattr(rc.AudioEncoding, "LINEAR_PCM", 1),
                 sample_rate_hertz=16000,
-                language_code="en-US",
+                language_code=ASR_LANG,
                 max_alternatives=1,
                 audio_channel_count=1,
                 enable_automatic_punctuation=True,
             )
-            resp = rc.ASRService(auth).offline_recognize(audio, cfg)
-            text = "".join(
-                r.alternatives[0].transcript for r in resp.results if r.alternatives
-            ).strip()
-            self._send(200, "application/json", json.dumps({"text": text}).encode())
+            svc = rc.ASRService(auth)
+            try:
+                # Offline (whole-file) recognition — preferred when served.
+                resp = svc.offline_recognize(audio, cfg)
+                text = "".join(
+                    r.alternatives[0].transcript for r in resp.results if r.alternatives
+                ).strip()
+                mode = "offline"
+            except Exception:
+                # Some NIMs are streaming-only ("Unavailable model ... type=offline").
+                # Fall back to a single-shot streaming request.
+                chunks = [audio[i : i + 32000] for i in range(0, len(audio), 32000)] or [b""]
+                scfg = rc.StreamingRecognitionConfig(config=cfg, interim_results=False)
+                text = ""
+                for r in svc.streaming_response_generator(audio_chunks=chunks, streaming_config=scfg):
+                    for res in r.results:
+                        if res.is_final and res.alternatives:
+                            text += res.alternatives[0].transcript
+                text = text.strip()
+                mode = "streaming"
+            self._send(200, "application/json", json.dumps({"text": text, "mode": mode}).encode())
         except Exception as e:  # noqa: BLE001
             self._send(500, "text/plain", ("error: " + str(e)[:400]).encode())
 
