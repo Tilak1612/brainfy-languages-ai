@@ -76,9 +76,23 @@ export async function transcribe(pcm: ArrayBuffer): Promise<string> {
   return (j.text as string) || "";
 }
 
-/** Synthesize `text` via the TTS endpoint and play it. */
+let current: HTMLAudioElement | null = null;
+
+/** Stop whatever Maya is currently saying. */
+export function stopSpeaking() {
+  if (!current) return;
+  current.pause();
+  current.src = "";
+  current = null;
+}
+
+/**
+ * Synthesize `text` via the TTS endpoint and play it. Any utterance already in
+ * flight is cancelled first, so a fast reply never talks over the previous one.
+ */
 export async function speak(text: string): Promise<void> {
   try {
+    stopSpeaking();
     const r = await fetch("/api/tts", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -87,7 +101,11 @@ export async function speak(text: string): Promise<void> {
     if (!r.ok) return;
     const url = URL.createObjectURL(await r.blob());
     const audio = new Audio(url);
-    audio.onended = () => URL.revokeObjectURL(url);
+    current = audio;
+    audio.onended = () => {
+      URL.revokeObjectURL(url);
+      if (current === audio) current = null;
+    };
     await audio.play().catch(() => {});
   } catch {
     /* ignore playback errors */

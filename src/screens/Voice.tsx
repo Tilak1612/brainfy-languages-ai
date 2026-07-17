@@ -3,7 +3,7 @@ import { MicIcon, MicOffIcon, HangupIcon, SettingsBurstIcon, SparkleIcon } from 
 import { cafeScript } from "../content/learning";
 import { actions } from "../lib/store";
 import { checkAi, streamChat, MAYA_SYSTEM, type ChatMsg } from "../lib/chat";
-import { checkVoice, Recorder, transcribe, speak } from "../lib/voice";
+import { checkVoice, Recorder, transcribe, speak, stopSpeaking } from "../lib/voice";
 
 interface Msg {
   from: "maya" | "user";
@@ -18,6 +18,10 @@ export default function Voice() {
   const [aiReady, setAiReady] = useState<boolean | null>(null);
   const [voiceReady, setVoiceReady] = useState(false);
   const [recording, setRecording] = useState(false);
+  const [muted, setMuted] = useState(false);
+  // Free conversation with Claude, or the guided café role-play. Defaults to
+  // "ai" once we know a key is configured; scripted is the offline fallback.
+  const [scripted, setScripted] = useState(false);
   const recRef = useRef<Recorder | null>(null);
 
   useEffect(() => {
@@ -25,11 +29,23 @@ export default function Voice() {
     checkVoice().then(setVoiceReady);
   }, []);
 
+  // Never leave Maya talking after the user navigates away.
+  useEffect(() => stopSpeaking, []);
+
+  // Real call clock — the design shows "Live · 02:14"; make it mean something.
+  const [elapsed, setElapsed] = useState(0);
+
   // ---- shared UI: call panel chrome ----
   const [done, setDone] = useState(false);
   const [tip, setTip] = useState(
     'Use polite frames like "Could I…, please?" — Maya remembers what you practice.',
   );
+
+  useEffect(() => {
+    if (done) return;
+    const id = setInterval(() => setElapsed((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [done]);
 
   // ---- scripted mode state ----
   const [step, setStep] = useState(0);
@@ -59,13 +75,17 @@ export default function Voice() {
     actions.recordAnswer("speaking", true);
     actions.addXp(8);
     const n = step + 1;
+    const line =
+      n >= cafeScript.length
+        ? "¡Perfecto! You ordered like a local. See you next session."
+        : cafeScript[n].maya;
+    setMsgs([...next, { from: "maya", text: line }]);
+    if (voiceReady && !muted) void speak(line);
     if (n >= cafeScript.length) {
-      setMsgs([...next, { from: "maya", text: "¡Perfecto! You ordered like a local. See you next session." }]);
       setTip("Great session — your café vocabulary is getting stronger.");
       actions.registerActivity(5);
       setDone(true);
     } else {
-      setMsgs([...next, { from: "maya", text: cafeScript[n].maya }]);
       setTip("Nice — natural and polite. Keep it up.");
       setStep(n);
     }
@@ -92,7 +112,7 @@ export default function Voice() {
       actions.addXp(6);
       actions.registerActivity(1);
       setTip("Maya is a live AI tutor — speak freely and she'll adapt to you.");
-      if (voiceReady && reply) void speak(reply);
+      if (voiceReady && !muted && reply) void speak(reply);
     } catch {
       setAiMsgs((m) => {
         const copy = [...m];
@@ -129,8 +149,56 @@ export default function Voice() {
     }
   }
 
-  const transcript = aiReady ? aiMsgs : msgs;
-  const liveLabel = aiReady ? (busy ? "Live · thinking…" : "Live · AI tutor") : done ? "Session ended" : "Live · 02:14";
+  // ---- call controls ----
+  function toggleMute() {
+    setMuted((m) => {
+      if (!m) stopSpeaking();
+      setTip(m ? "Maya's voice is back on." : "Maya is muted — you'll still see her replies.");
+      return !m;
+    });
+  }
+
+  /** End the call, or start a fresh one after hanging up. */
+  function toggleCall() {
+    stopSpeaking();
+    if (done) return restart();
+    setDone(true);
+    setRecording(false);
+    setTip("Session ended. Press the green button to start a new one.");
+  }
+
+  function restart() {
+    setDone(false);
+    setElapsed(0);
+    setStep(0);
+    setMsgs([{ from: "maya", text: cafeScript[0].maya }]);
+    setAiMsgs([{ from: "maya", text: GREETING }]);
+    apiMsgs.current = [];
+    setInput("");
+    setTip('Use polite frames like "Could I…, please?" — Maya remembers what you practice.');
+  }
+
+  /** Swap between free AI conversation and the guided café role-play. */
+  function toggleScenario() {
+    stopSpeaking();
+    setScripted((s) => {
+      setTip(s
+        ? "Free conversation — say anything and Maya adapts to you."
+        : "Café role-play — pick the most natural reply at each step.");
+      return !s;
+    });
+    restart();
+  }
+
+  const aiMode = !!aiReady && !scripted;
+  const canTalk = aiMode && voiceReady && !done && !busy;
+  const transcript = aiMode ? aiMsgs : msgs;
+  const clock = `${String(Math.floor(elapsed / 60)).padStart(2, "0")}:${String(elapsed % 60).padStart(2, "0")}`;
+  const liveLabel = done
+    ? "Session ended"
+    : aiMode && busy
+      ? "Live · thinking…"
+      : `Live · ${clock}`;
 
   return (
     <div className="anim-fade mx-auto grid max-w-[1180px] grid-cols-[1.15fr_.85fr] gap-5">
@@ -150,7 +218,7 @@ export default function Voice() {
             </div>
           </div>
           <div className="flex items-center gap-[7px] rounded-full border border-white/[.12] bg-white/[.08] px-3 py-1.5 text-[12px] font-semibold text-[#c9c7d4]">
-            {aiReady ? "Free conversation · B2" : "Café role-play · A2"}
+            {aiMode ? "Free conversation · B2" : "Café role-play · A2"}
           </div>
         </div>
 
@@ -162,9 +230,18 @@ export default function Voice() {
                 <span className="absolute inset-0 rounded-full border-2 border-[rgba(139,124,246,.5)]" style={{ animation: "brf-ring 2.4s ease-out infinite 1.2s" }} />
               </>
             )}
-            <div className={`flex h-[150px] w-[150px] items-center justify-center rounded-full bg-[radial-gradient(circle_at_35%_30%,#a99cff,#5B4BE8_60%,#3a24b8)] shadow-[0_20px_60px_-14px_rgba(91,75,232,.85)] ${done ? "" : "anim-pulse"}`}>
+            <button
+              onClick={canTalk ? toggleMic : undefined}
+              disabled={!canTalk}
+              title={canTalk ? (recording ? "Stop and send" : "Tap to speak to Maya") : undefined}
+              className={`flex h-[150px] w-[150px] items-center justify-center rounded-full shadow-[0_20px_60px_-14px_rgba(91,75,232,.85)] transition ${
+                recording
+                  ? "bg-[radial-gradient(circle_at_35%_30%,#ff9d84,#E14E2A_60%,#a32d12)] animate-pulse"
+                  : "bg-[radial-gradient(circle_at_35%_30%,#a99cff,#5B4BE8_60%,#3a24b8)]"
+              } ${canTalk ? "cursor-pointer hover:brightness-[1.08]" : "cursor-default"} ${done || recording ? "" : "anim-pulse"}`}
+            >
               <MicIcon size={46} className="text-white" />
-            </div>
+            </button>
           </div>
 
           <div className="flex h-[34px] items-end gap-[5px]">
@@ -175,26 +252,49 @@ export default function Voice() {
           <div className="text-[13.5px] text-[#a9a7b6]">
             {aiReady === null
               ? "Connecting…"
-              : aiReady
-                ? "Type below — Maya replies in real time"
-                : done
-                  ? "Session complete — great work"
-                  : "Listening… or pick a reply below"}
+              : done
+                ? "Session complete — great work"
+                : recording
+                  ? "Listening… tap the mic when you're done"
+                  : aiMode
+                    ? canTalk
+                      ? "Tap the mic to speak, or type below"
+                      : "Type below — Maya replies in real time"
+                    : "Listening… or pick a reply below"}
           </div>
         </div>
 
         <div className="flex items-center gap-3.5">
-          <button className="flex h-[54px] w-[54px] items-center justify-center rounded-full border border-white/[.14] bg-white/[.08] transition hover:bg-white/[.16]">
-            <MicOffIcon size={20} className="text-white" />
+          <button
+            onClick={toggleMute}
+            title={muted ? "Unmute Maya's voice" : "Mute Maya's voice"}
+            aria-pressed={muted}
+            className={`flex h-[54px] w-[54px] items-center justify-center rounded-full border transition ${
+              muted
+                ? "border-coral/60 bg-coral/25 text-coral"
+                : "border-white/[.14] bg-white/[.08] text-white hover:bg-white/[.16]"
+            }`}
+          >
+            <MicOffIcon size={20} />
           </button>
           <button
-            onClick={() => { if (!done) { setDone(true); setTip("Session ended. Start another anytime from AI Tutors."); } }}
-            className="flex h-[66px] w-[66px] items-center justify-center rounded-full bg-[linear-gradient(135deg,#FF6B4A,#E14E2A)] shadow-[0_12px_30px_-10px_rgba(225,78,42,.8)] transition hover:brightness-[1.08]"
+            onClick={toggleCall}
+            title={done ? "Start a new session" : "End session"}
+            className={`flex h-[66px] w-[66px] items-center justify-center rounded-full text-white transition hover:brightness-[1.08] ${
+              done
+                ? "bg-[linear-gradient(135deg,#4ADE80,#16A34A)] shadow-[0_12px_30px_-10px_rgba(22,163,74,.8)]"
+                : "bg-[linear-gradient(135deg,#FF6B4A,#E14E2A)] shadow-[0_12px_30px_-10px_rgba(225,78,42,.8)]"
+            }`}
           >
-            <HangupIcon size={26} />
+            {done ? <MicIcon size={26} /> : <HangupIcon size={26} />}
           </button>
-          <button className="flex h-[54px] w-[54px] items-center justify-center rounded-full border border-white/[.14] bg-white/[.08] transition hover:bg-white/[.16]">
-            <SettingsBurstIcon size={20} className="text-white" />
+          <button
+            onClick={toggleScenario}
+            disabled={!aiReady}
+            title={aiMode ? "Switch to café role-play" : "Switch to free conversation"}
+            className="flex h-[54px] w-[54px] items-center justify-center rounded-full border border-white/[.14] bg-white/[.08] text-white transition hover:bg-white/[.16] disabled:opacity-40"
+          >
+            <SettingsBurstIcon size={20} />
           </button>
         </div>
       </div>
@@ -206,7 +306,7 @@ export default function Voice() {
             <div className="font-display text-[16px] font-bold">Live transcript</div>
             <div className="flex items-center gap-1.5 text-[12px] text-[#8b887f]">
               <span className="h-1.5 w-1.5 rounded-full bg-green" />
-              {aiReady ? "Powered by Claude" : "Auto-corrected"}
+              {aiMode ? "Powered by Claude" : "Auto-corrected"}
             </div>
           </div>
           <div ref={scrollRef} className="flex max-h-[280px] flex-col gap-3 overflow-y-auto pr-1">
@@ -229,7 +329,7 @@ export default function Voice() {
           </div>
 
           {/* AI mode: free-text input */}
-          {aiReady && !done && (
+          {aiMode && !done && (
             <div className="mt-4 flex items-center gap-2 border-t border-[#EFECE5] pt-4">
               {voiceReady && (
                 <button
@@ -264,7 +364,7 @@ export default function Voice() {
           )}
 
           {/* Scripted mode: reply options */}
-          {!aiReady && aiReady !== null && !done && (
+          {!aiMode && aiReady !== null && !done && (
             <div className="mt-4 flex flex-col gap-2 border-t border-[#EFECE5] pt-4">
               {current.options.map((o, i) => (
                 <button
@@ -282,7 +382,7 @@ export default function Voice() {
         <div className="rounded-[18px] border border-[#DCD6FA] bg-[linear-gradient(135deg,#EEEBFD,#F4F2FE)] px-[18px] py-[17px]">
           <div className="mb-2 flex items-center gap-2 text-[12.5px] font-extrabold tracking-[.04em] text-brand">
             <SparkleIcon size={15} />
-            {aiReady ? "LIVE AI TUTOR" : "COACHING TIP"}
+            {aiMode ? "LIVE AI TUTOR" : "COACHING TIP"}
           </div>
           <div className="text-[13.5px] leading-[1.55] text-[#3d3a52]">{tip}</div>
         </div>
