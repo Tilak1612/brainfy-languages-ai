@@ -24,11 +24,22 @@ export interface State {
 
 const KEY = "brainfy.state.v1";
 
+/**
+ * When a Supabase project is configured, Postgres owns the data: accounts are
+ * real, so progress starts at zero and localStorage is not used (it would only
+ * leak one account's progress into the next session on a shared browser).
+ * Without a project the app runs as the self-contained design demo.
+ *
+ * Declared before load() because load() reads it.
+ */
+const localOnly = !import.meta.env.VITE_SUPABASE_URL;
+
 function todayStr(now = Date.now()): string {
   return new Date(now).toISOString().slice(0, 10);
 }
 
-function defaultState(): State {
+/** The numbers from the original design mock. Demo mode only. */
+function demoState(): State {
   return {
     xp: 2480,
     coins: 340,
@@ -45,8 +56,31 @@ function defaultState(): State {
   };
 }
 
+/** What a real new account looks like: nothing earned yet. */
+function emptyState(): State {
+  return {
+    xp: 0,
+    coins: 0,
+    streak: 0,
+    lastActiveDate: null,
+    minutesToday: 0,
+    dailyGoalMin: 25,
+    todayDate: todayStr(),
+    skills: { speaking: 0, listening: 0, vocabulary: 0, grammar: 0, reading: 0 },
+    cards: {},
+    wordsLearned: 0,
+    achievements: [],
+    lessonsCompleted: 0,
+  };
+}
+
+function defaultState(): State {
+  return localOnly ? demoState() : emptyState();
+}
+
 let state: State = load();
 const listeners = new Set<() => void>();
+const changeHooks = new Set<() => void>();
 
 function load(): State {
   try {
@@ -59,6 +93,7 @@ function load(): State {
 }
 
 function persist() {
+  if (!localOnly) return;
   try {
     localStorage.setItem(KEY, JSON.stringify(state));
   } catch {
@@ -69,6 +104,31 @@ function persist() {
 function set(next: Partial<State>) {
   state = { ...state, ...next };
   persist();
+  listeners.forEach((l) => l());
+  changeHooks.forEach((h) => h());
+}
+
+/**
+ * Replace state with rows loaded from the backend. Does not fire change hooks:
+ * this is the server's data arriving, and echoing it straight back as a write
+ * would be pointless traffic.
+ */
+export function hydrate(next: Partial<State>) {
+  state = { ...state, ...next };
+  listeners.forEach((l) => l());
+}
+
+/** Observe every mutation. Used by the sync layer to mirror state to Postgres. */
+export function onChange(cb: () => void): () => void {
+  changeHooks.add(cb);
+  return () => {
+    changeHooks.delete(cb);
+  };
+}
+
+/** Wipe in-memory state back to defaults, e.g. on sign-out. */
+export function resetToDefaults() {
+  state = defaultState();
   listeners.forEach((l) => l());
 }
 

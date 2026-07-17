@@ -1,9 +1,21 @@
-// Client-side chat helper. Talks to the /api/chat dev-server middleware, which
-// holds the API key server-side. This module never sees a key.
+// Client-side chat helper. Talks to /api/chat, which holds the API key
+// server-side. This module never sees a key.
+import { supabase } from "./supabase";
 
 export interface ChatMsg {
   role: "user" | "assistant";
   content: string;
+}
+
+/**
+ * Headers for a call to a metered endpoint. The server bills real money per
+ * request, so it requires the caller's Supabase access token.
+ */
+export async function authHeaders(): Promise<Record<string, string>> {
+  if (!supabase) return {};
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 /** Returns true if the server has an API key configured (real AI available). */
@@ -29,9 +41,10 @@ export async function streamChat(
 ): Promise<string> {
   const r = await fetch("/api/chat", {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", ...(await authHeaders()) },
     body: JSON.stringify({ system, messages }),
   });
+  if (r.status === 429) throw new Error("You've hit this hour's tutor limit — try again shortly.");
   if (!r.ok || !r.body) throw new Error(`chat failed (${r.status})`);
   const reader = r.body.getReader();
   const decoder = new TextDecoder();
@@ -46,22 +59,7 @@ export async function streamChat(
   return full;
 }
 
-export const MAYA_SYSTEM = `You are Maya, a warm, patient English conversation tutor for an intermediate learner named Sofia (CEFR B2, native language Spanish).
-
-Style:
-- Speak natural, everyday English. Keep every reply to 1-3 short sentences.
-- Ask one question at a time and let the learner do most of the talking.
-- Be encouraging and human.
-
-Correction policy:
-- Do not interrupt the flow for small mistakes. When the learner makes an error, gently recast it: model the correct phrasing naturally in your reply rather than lecturing.
-- Only stop to explain if an error blocks meaning.
-
-Setting: a friendly everyday / cafe conversation for speaking practice.
-
-Respond ONLY with your spoken reply to Sofia. No stage directions, no meta-commentary, no lists.`;
-
-export const GRAMMAR_SYSTEM = `You are Kenji, a grammar coach for Sofia, a Spanish-speaking English learner at CEFR B2.
+export const GRAMMAR_SYSTEM = `You are Kenji, a grammar coach for a Spanish-speaking English learner at CEFR B2.
 
 You will be given one English sentence the learner just built in an exercise.
 

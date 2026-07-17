@@ -1,6 +1,7 @@
 // Client-side voice helpers: microphone capture → 16 kHz mono PCM for the STT
 // endpoint, and TTS playback. All NVIDIA calls happen server-side (/api/stt,
 // /api/tts); this module only handles audio in the browser.
+import { authHeaders } from "./chat";
 
 /** True if the server has NVIDIA voice (STT/TTS) configured. */
 export async function checkVoice(): Promise<boolean> {
@@ -68,7 +69,7 @@ function toPcm16Mono16k(audio: AudioBuffer): ArrayBuffer {
 export async function transcribe(pcm: ArrayBuffer): Promise<string> {
   const r = await fetch("/api/stt", {
     method: "POST",
-    headers: { "content-type": "application/octet-stream" },
+    headers: { "content-type": "application/octet-stream", ...(await authHeaders()) },
     body: pcm,
   });
   if (!r.ok) throw new Error("stt " + r.status);
@@ -95,7 +96,7 @@ export async function speak(text: string): Promise<void> {
     stopSpeaking();
     const r = await fetch("/api/tts", {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", ...(await authHeaders()) },
       body: JSON.stringify({ text }),
     });
     if (!r.ok) return;

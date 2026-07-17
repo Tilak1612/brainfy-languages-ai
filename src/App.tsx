@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 import type { Screen } from "./data";
 import { actions } from "./lib/store";
+import { authEnabled } from "./lib/supabase";
+import { useAuth } from "./lib/auth";
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
+import SignIn from "./screens/SignIn";
 import Dashboard from "./screens/Dashboard";
 import Voice from "./screens/Voice";
 import Lesson from "./screens/Lesson";
@@ -14,11 +17,25 @@ import Tutors from "./screens/Tutors";
 export default function App() {
   const [screen, setScreen] = useState<Screen>("dashboard");
   const navigate = (s: Screen) => setScreen(s);
+  const { session, ready } = useAuth();
+  const signedIn = !authEnabled || Boolean(session);
 
-  // Register a learning session for today (advances streak once/day).
+  // Register a learning session for today (advances streak once/day). Waits for
+  // auth so it lands on the user's own row rather than a pre-hydration blank.
   useEffect(() => {
+    if (!ready || !signedIn) return;
     actions.registerActivity(0);
-  }, []);
+  }, [ready, signedIn]);
+
+  if (authEnabled && !ready) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-cream text-[14px] text-[#8b887f]">
+        Loading your progress…
+      </div>
+    );
+  }
+
+  if (!signedIn) return <SignIn />;
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-cream">

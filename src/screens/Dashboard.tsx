@@ -3,6 +3,7 @@ import { tutors, recommended } from "../data";
 import { MicIcon, WaveIcon, LessonPairIcon, CalendarIcon } from "../components/icons";
 import { useStore, dueCount } from "../lib/store";
 import { setActive, useActiveTutor } from "../lib/tutors";
+import { useDisplayName } from "../lib/auth";
 import { vocabDeck } from "../content/learning";
 
 const cardHover =
@@ -16,6 +17,10 @@ export default function Dashboard({ onNavigate }: { onNavigate: (s: Screen) => v
   useStore((s) => s.cards); // re-render when SRS state changes
   const due = dueCount(vocabDeck.map((v) => v.id));
   const activeTutor = useActiveTutor();
+  const learner = useDisplayName();
+  // The design said "Good afternoon" at every hour; greet by the real clock.
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
   const pct = Math.min(100, Math.round((minutesToday / dailyGoalMin) * 100));
   const minutesLeft = Math.max(0, dailyGoalMin - minutesToday);
@@ -32,7 +37,7 @@ export default function Dashboard({ onNavigate }: { onNavigate: (s: Screen) => v
     <div className="anim-fade mx-auto max-w-[1180px]">
       <div className="mb-[26px] flex items-end justify-between gap-5">
         <div>
-          <div className="mb-[5px] text-[13.5px] font-bold tracking-[.02em] text-[#8b887f]">Good afternoon, Sofia</div>
+          <div className="mb-[5px] text-[13.5px] font-bold tracking-[.02em] text-[#8b887f]">{greeting}, {learner}</div>
           <h1 className="m-0 font-display text-[32px] font-extrabold leading-[1.05] tracking-[-.025em]">Let's keep your streak alive.</h1>
         </div>
         <button

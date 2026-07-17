@@ -17,6 +17,8 @@ FUNCTIONS_URL = "https://api.nvcf.nvidia.com/v2/nvcf/functions?visibility=public
 # requests. Override with NVIDIA_ASR_PATTERN.
 ASR_PATTERN = os.environ.get("NVIDIA_ASR_PATTERN", r"^ai-parakeet-ctc-1_1b-asr$")
 ASR_LANG = os.environ.get("NVIDIA_ASR_LANG", "en-US")
+SUPABASE_URL = os.environ.get("VITE_SUPABASE_URL") or os.environ.get("SUPABASE_URL")
+SUPABASE_ANON = os.environ.get("VITE_SUPABASE_ANON_KEY") or os.environ.get("SUPABASE_ANON_KEY")
 
 _fid_cache = {}
 
@@ -36,11 +38,33 @@ def resolve_function_id(key, pattern):
     raise RuntimeError("no ACTIVE NVCF function matched /%s/" % pattern)
 
 
+def authenticated_user(headers):
+    """Return the caller's user id, "" if no project is configured (demo mode),
+    or None if the bearer token is missing/invalid. Voice calls cost money, so
+    an unauthenticated caller must not reach NVIDIA."""
+    if not SUPABASE_URL or not SUPABASE_ANON:
+        return ""  # open demo mode
+    token = (headers.get("authorization") or "").replace("Bearer ", "", 1).strip()
+    if not token:
+        return None
+    try:
+        req = urllib.request.Request(
+            SUPABASE_URL.rstrip("/") + "/auth/v1/user",
+            headers={"apikey": SUPABASE_ANON, "Authorization": "Bearer " + token},
+        )
+        with urllib.request.urlopen(req, timeout=10) as r:
+            return json.load(r).get("id") or None
+    except Exception:  # noqa: BLE001
+        return None
+
+
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
         key = os.environ.get("NVIDIA_API_KEY")
         if not key:
             return self._send(503, "text/plain", b"voice not configured")
+        if authenticated_user(self.headers) is None:
+            return self._send(401, "text/plain", b"sign in to use voice")
         try:
             n = int(self.headers.get("content-length") or 0)
             audio = self.rfile.read(n)

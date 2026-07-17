@@ -5,6 +5,7 @@ import { actions } from "../lib/store";
 import { checkAi, streamChat, type ChatMsg } from "../lib/chat";
 import { checkVoice, Recorder, transcribe, speak, stopSpeaking } from "../lib/voice";
 import { useActiveTutor } from "../lib/tutors";
+import { useDisplayName } from "../lib/auth";
 
 interface Msg {
   from: "maya" | "user";
@@ -18,7 +19,9 @@ const DEFAULT_TIP =
 
 export default function Voice() {
   const tutor = useActiveTutor();
-  const GREETING = `Hi Sofia! ${tutor.name} here. What did you get up to today?`;
+  const learner = useDisplayName();
+  const GREETING = `Hi ${learner}! ${tutor.name} here. What did you get up to today?`;
+  const system = tutor.system.replaceAll("{{LEARNER}}", learner);
   const [aiReady, setAiReady] = useState<boolean | null>(null);
   const [voiceReady, setVoiceReady] = useState(false);
   const [recording, setRecording] = useState(false);
@@ -106,7 +109,7 @@ export default function Voice() {
     apiMsgs.current.push({ role: "user", content: text });
     actions.recordAnswer("speaking", true);
     try {
-      const reply = await streamChat(tutor.system, apiMsgs.current, (delta) => {
+      const reply = await streamChat(system, apiMsgs.current, (delta) => {
         setAiMsgs((m) => {
           const copy = [...m];
           copy[copy.length - 1] = { from: "maya", text: copy[copy.length - 1].text + delta };
