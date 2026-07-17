@@ -1,58 +1,75 @@
-// Auth session plumbing. Keeps a React-visible session, and drives the sync
-// layer: pull the user's rows on sign-in, mirror changes while signed in, and
-// clear everything on sign-out so the next person on this browser starts clean.
-import { useEffect, useState } from "react";
+// Auth session plumbing.
+//
+// The session lives at module scope, NOT in a hook. useAuth() is consumed by
+// several components at once (App, Sidebar, useDisplayName in Dashboard and
+// Voice), and an earlier version drove pull/startSync from inside each
+// consumer's useEffect. That meant every consumer opened its own subscription
+// and, worse, its cleanup called stopSync() — so simply navigating away from
+// the dashboard tore down syncing for the whole app and progress silently
+// stopped reaching Postgres. One module-level owner, one sync lifecycle.
+import { useSyncExternalStore } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase, authEnabled } from "./supabase";
 import { pull, startSync, stopSync } from "./sync";
 import { resetToDefaults } from "./store";
 
 export interface AuthState {
-  /** null = still resolving; false = signed out. */
+  /** undefined = still resolving; null = signed out. */
   session: Session | null | undefined;
   ready: boolean;
 }
 
+// Snapshot must be referentially stable between changes for useSyncExternalStore.
+let snapshot: AuthState = { session: undefined, ready: !authEnabled };
+const listeners = new Set<() => void>();
+
+function emit(next: AuthState) {
+  snapshot = next;
+  listeners.forEach((l) => l());
+}
+
+function subscribe(cb: () => void) {
+  listeners.add(cb);
+  return () => {
+    listeners.delete(cb);
+  };
+}
+
+async function adopt(next: Session | null) {
+  if (next?.user) {
+    await pull(next.user.id);
+    startSync(next.user.id);
+  } else {
+    stopSync();
+    resetToDefaults();
+  }
+  emit({ session: next, ready: true });
+}
+
+let started = false;
+
+/** Begin resolving the session. Idempotent; safe to call from render. */
+function start() {
+  if (started) return;
+  started = true;
+  if (!supabase) {
+    emit({ session: null, ready: true });
+    return;
+  }
+  void supabase.auth.getSession().then(({ data }) => adopt(data.session));
+  supabase.auth.onAuthStateChange((_event, next) => {
+    void adopt(next);
+  });
+}
+
+start();
+
 export function useAuth(): AuthState {
-  const [session, setSession] = useState<Session | null | undefined>(undefined);
-  const [ready, setReady] = useState(!authEnabled);
-
-  useEffect(() => {
-    if (!supabase) {
-      setSession(null);
-      setReady(true);
-      return;
-    }
-
-    let active = true;
-
-    async function adopt(next: Session | null) {
-      if (!active) return;
-      setSession(next);
-      if (next?.user) {
-        await pull(next.user.id);
-        startSync(next.user.id);
-      } else {
-        stopSync();
-        resetToDefaults();
-      }
-      if (active) setReady(true);
-    }
-
-    void supabase.auth.getSession().then(({ data }) => adopt(data.session));
-
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
-      void adopt(next);
-    });
-
-    return () => {
-      active = false;
-      sub.subscription.unsubscribe();
-      stopSync();
-    };
-  }, []);
-
-  return { session, ready };
+  return useSyncExternalStore(
+    subscribe,
+    () => snapshot,
+    () => snapshot,
+  );
 }
 
 /**
