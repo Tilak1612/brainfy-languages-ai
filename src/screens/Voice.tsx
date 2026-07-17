@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { MicIcon, MicOffIcon, HangupIcon, SettingsBurstIcon, SparkleIcon } from "../components/icons";
 import { cafeScript } from "../content/learning";
 import { actions } from "../lib/store";
-import { checkAi, streamChat, MAYA_SYSTEM, type ChatMsg } from "../lib/chat";
+import { checkAi, streamChat, type ChatMsg } from "../lib/chat";
 import { checkVoice, Recorder, transcribe, speak, stopSpeaking } from "../lib/voice";
+import { useActiveTutor } from "../lib/tutors";
 
 interface Msg {
   from: "maya" | "user";
@@ -12,11 +13,12 @@ interface Msg {
 }
 
 const waveDelays = ["0s", ".15s", ".3s", ".45s", ".6s", ".75s", ".9s"];
-const GREETING = "Hi Sofia! Great to see you. What did you get up to today?";
 const DEFAULT_TIP =
-  'Use polite frames like "Could I…, please?" — Maya remembers what you practice.';
+  'Use polite frames like "Could I…, please?" — your tutor remembers what you practice.';
 
 export default function Voice() {
+  const tutor = useActiveTutor();
+  const GREETING = `Hi Sofia! ${tutor.name} here. What did you get up to today?`;
   const [aiReady, setAiReady] = useState<boolean | null>(null);
   const [voiceReady, setVoiceReady] = useState(false);
   const [recording, setRecording] = useState(false);
@@ -31,7 +33,7 @@ export default function Voice() {
     checkVoice().then(setVoiceReady);
   }, []);
 
-  // Never leave Maya talking after the user navigates away.
+  // Never leave the tutor talking after the user navigates away.
   useEffect(() => stopSpeaking, []);
 
   // Real call clock — the design shows "Live · 02:14"; make it mean something.
@@ -101,7 +103,7 @@ export default function Voice() {
     apiMsgs.current.push({ role: "user", content: text });
     actions.recordAnswer("speaking", true);
     try {
-      const reply = await streamChat(MAYA_SYSTEM, apiMsgs.current, (delta) => {
+      const reply = await streamChat(tutor.system, apiMsgs.current, (delta) => {
         setAiMsgs((m) => {
           const copy = [...m];
           copy[copy.length - 1] = { from: "maya", text: copy[copy.length - 1].text + delta };
@@ -111,7 +113,7 @@ export default function Voice() {
       apiMsgs.current.push({ role: "assistant", content: reply });
       actions.addXp(6);
       actions.registerActivity(1);
-      setTip("Maya is a live AI tutor — speak freely and she'll adapt to you.");
+      setTip(`${tutor.name} is a live AI tutor — speak freely and they'll adapt to you.`);
       if (voiceReady && !muted && reply) void speak(reply);
     } catch {
       setAiMsgs((m) => {
@@ -154,7 +156,7 @@ export default function Voice() {
     const next = !muted;
     if (next) stopSpeaking();
     setMuted(next);
-    setTip(next ? "Maya is muted — you'll still see her replies." : "Maya's voice is back on.");
+    setTip(next ? `${tutor.name} is muted — you'll still see the replies.` : `${tutor.name}'s voice is back on.`);
   }
 
   /** End the call, or start a fresh one after hanging up. */
@@ -187,7 +189,7 @@ export default function Voice() {
     restart(
       next
         ? "Café role-play — pick the most natural reply at each step."
-        : "Free conversation — say anything and Maya adapts to you.",
+        : `Free conversation — say anything and ${tutor.name} adapts to you.`,
     );
   }
 
@@ -207,11 +209,14 @@ export default function Voice() {
       <div className="relative flex min-h-[560px] flex-col items-center overflow-hidden rounded-[24px] bg-[linear-gradient(160deg,#211f2b,#141319)] p-[30px] text-white">
         <div className="flex w-full items-center justify-between">
           <div className="flex items-center gap-[11px]">
-            <div className="flex h-[42px] w-[42px] items-center justify-center rounded-[13px] bg-[linear-gradient(135deg,#8B7CF6,#5B4BE8)] font-display text-[17px] font-extrabold">
-              M
+            <div
+              className="flex h-[42px] w-[42px] items-center justify-center rounded-[13px] font-display text-[17px] font-extrabold"
+              style={{ background: tutor.grad }}
+            >
+              {tutor.initials}
             </div>
             <div className="leading-[1.2]">
-              <div className="text-[15px] font-bold">Maya</div>
+              <div className="text-[15px] font-bold">{tutor.name}</div>
               <div className="flex items-center gap-[5px] text-[12px] text-mint">
                 <span className="h-1.5 w-1.5 rounded-full bg-mint" />
                 {liveLabel}
@@ -219,7 +224,7 @@ export default function Voice() {
             </div>
           </div>
           <div className="flex items-center gap-[7px] rounded-full border border-white/[.12] bg-white/[.08] px-3 py-1.5 text-[12px] font-semibold text-[#c9c7d4]">
-            {aiMode ? "Free conversation · B2" : "Café role-play · A2"}
+            {aiMode ? tutor.badge : "Café role-play · A2"}
           </div>
         </div>
 
@@ -234,7 +239,7 @@ export default function Voice() {
             <button
               onClick={canTalk ? toggleMic : undefined}
               disabled={!canTalk}
-              title={canTalk ? (recording ? "Stop and send" : "Tap to speak to Maya") : undefined}
+              title={canTalk ? (recording ? "Stop and send" : `Tap to speak to ${tutor.name}`) : undefined}
               className={`flex h-[150px] w-[150px] items-center justify-center rounded-full shadow-[0_20px_60px_-14px_rgba(91,75,232,.85)] transition ${
                 recording
                   ? "bg-[radial-gradient(circle_at_35%_30%,#ff9d84,#E14E2A_60%,#a32d12)] animate-pulse"
@@ -260,7 +265,7 @@ export default function Voice() {
                   : aiMode
                     ? canTalk
                       ? "Tap the mic to speak, or type below"
-                      : "Type below — Maya replies in real time"
+                      : `Type below — ${tutor.name} replies in real time`
                     : "Listening… or pick a reply below"}
           </div>
         </div>
@@ -268,7 +273,7 @@ export default function Voice() {
         <div className="flex items-center gap-3.5">
           <button
             onClick={toggleMute}
-            title={muted ? "Unmute Maya's voice" : "Mute Maya's voice"}
+            title={muted ? `Unmute ${tutor.name}'s voice` : `Mute ${tutor.name}'s voice`}
             aria-pressed={muted}
             className={`flex h-[54px] w-[54px] items-center justify-center rounded-full border transition ${
               muted
@@ -336,7 +341,7 @@ export default function Voice() {
                 <button
                   onClick={toggleMic}
                   disabled={busy}
-                  title={recording ? "Stop and send" : "Speak to Maya"}
+                  title={recording ? "Stop and send" : `Speak to ${tutor.name}`}
                   className={`flex h-[40px] w-[40px] flex-none items-center justify-center rounded-[12px] border transition disabled:opacity-40 ${
                     recording
                       ? "border-coral-deep bg-[#FFEDE7] text-coral-deep animate-pulse"
@@ -351,7 +356,7 @@ export default function Voice() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && send()}
                 disabled={busy || recording}
-                placeholder={recording ? "Listening…" : "Say something to Maya…"}
+                placeholder={recording ? "Listening…" : `Say something to ${tutor.name}…`}
                 className="flex-1 rounded-[12px] border border-[#E4E1DA] bg-white px-3.5 py-2.5 text-[13.5px] outline-none focus:border-brand disabled:opacity-60"
               />
               <button
