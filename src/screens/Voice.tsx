@@ -23,6 +23,9 @@ export default function Voice() {
   const [voiceReady, setVoiceReady] = useState(false);
   const [recording, setRecording] = useState(false);
   const [muted, setMuted] = useState(false);
+  // send() awaits the stream for seconds before speaking, so it must read the
+  // mute state at reply time — not the value captured when it was called.
+  const mutedRef = useRef(false);
   // Free conversation with Claude, or the guided café role-play. Defaults to
   // "ai" once we know a key is configured; scripted is the offline fallback.
   const [scripted, setScripted] = useState(false);
@@ -114,7 +117,7 @@ export default function Voice() {
       actions.addXp(6);
       actions.registerActivity(1);
       setTip(`${tutor.name} is a live AI tutor — speak freely and they'll adapt to you.`);
-      if (voiceReady && !muted && reply) void speak(reply);
+      if (voiceReady && !mutedRef.current && reply) void speak(reply);
     } catch {
       setAiMsgs((m) => {
         const copy = [...m];
@@ -155,6 +158,7 @@ export default function Voice() {
   function toggleMute() {
     const next = !muted;
     if (next) stopSpeaking();
+    mutedRef.current = next;
     setMuted(next);
     setTip(next ? `${tutor.name} is muted — you'll still see the replies.` : `${tutor.name}'s voice is back on.`);
   }
@@ -239,7 +243,17 @@ export default function Voice() {
             <button
               onClick={canTalk ? toggleMic : undefined}
               disabled={!canTalk}
-              title={canTalk ? (recording ? "Stop and send" : `Tap to speak to ${tutor.name}`) : undefined}
+              title={
+                canTalk
+                  ? recording
+                    ? "Stop and send"
+                    : `Tap to speak to ${tutor.name}`
+                  : done
+                    ? "Session ended — press the green button to start a new one"
+                    : !aiMode
+                      ? "Pick a reply below, or switch to free conversation"
+                      : "Voice input isn't available right now — type instead"
+              }
               className={`flex h-[150px] w-[150px] items-center justify-center rounded-full shadow-[0_20px_60px_-14px_rgba(91,75,232,.85)] transition ${
                 recording
                   ? "bg-[radial-gradient(circle_at_35%_30%,#ff9d84,#E14E2A_60%,#a32d12)] animate-pulse"

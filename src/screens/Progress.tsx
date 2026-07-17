@@ -92,7 +92,9 @@ export default function Progress() {
       <div className="rounded-[22px] border border-[#E7E4DD] bg-white p-6">
         <div className="mb-5 flex items-baseline justify-between">
           <div className="font-display text-[17px] font-bold">Achievements</div>
-          <span className="text-[13px] font-semibold text-[#8b887f]">14 of 40 unlocked</span>
+          <span className="text-[13px] font-semibold text-[#8b887f]">
+            {ACHS.filter((a) => unlocked.includes(a.id)).length} of {ACHS.length} unlocked
+          </span>
         </div>
         <div className="grid grid-cols-6 gap-3.5">
           {ACHS.map((a) => {

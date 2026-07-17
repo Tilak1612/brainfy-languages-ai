@@ -85,11 +85,12 @@ export function dueCount(deckIds: string[], now = Date.now()): number {
 }
 
 // ---- actions ----
+// These ids MUST match the tiles rendered by the Progress screen — an id that
+// exists only here can be "unlocked" but has nowhere to show up.
 const ACH_RULES: { id: string; label: string; test: (s: State) => boolean }[] = [
-  { id: "firstLesson", label: "First lesson", test: (s) => s.lessonsCompleted >= 1 },
-  { id: "xp3000", label: "3,000 XP", test: (s) => s.xp >= 3000 },
-  { id: "words900", label: "900 words", test: (s) => s.wordsLearned >= 900 },
-  { id: "streak30", label: "30-day streak", test: (s) => s.streak >= 30 },
+  { id: "streak21", label: "21-day streak", test: (s) => s.streak >= 21 },
+  { id: "words500", label: "500 words", test: (s) => s.wordsLearned >= 500 },
+  { id: "days365", label: "365 days", test: (s) => s.streak >= 365 },
 ];
 
 function checkAchievements() {
@@ -173,8 +174,6 @@ export const ACHIEVEMENT_LABELS: Record<string, string> = {
   conv100: "100 conversations",
   words500: "500 words",
   perfectweek: "Perfect week",
-  firstLesson: "First lesson",
-  xp3000: "3,000 XP",
-  words900: "900 words",
-  streak30: "30-day streak",
+  c1level: "C1 level",
+  days365: "365 days",
 };
