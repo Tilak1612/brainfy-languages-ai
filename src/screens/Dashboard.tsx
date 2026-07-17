@@ -2,6 +2,7 @@ import type { Screen } from "../data";
 import { tutors, recommended } from "../data";
 import { MicIcon, WaveIcon, LessonPairIcon, CalendarIcon } from "../components/icons";
 import { useStore, dueCount } from "../lib/store";
+import { setActive, useActiveTutor } from "../lib/tutors";
 import { vocabDeck } from "../content/learning";
 
 const cardHover =
@@ -14,13 +15,14 @@ export default function Dashboard({ onNavigate }: { onNavigate: (s: Screen) => v
   const dailyGoalMin = useStore((s) => s.dailyGoalMin);
   useStore((s) => s.cards); // re-render when SRS state changes
   const due = dueCount(vocabDeck.map((v) => v.id));
+  const activeTutor = useActiveTutor();
 
   const pct = Math.min(100, Math.round((minutesToday / dailyGoalMin) * 100));
   const minutesLeft = Math.max(0, dailyGoalMin - minutesToday);
   const dashOffset = RING_C * (1 - pct / 100);
 
   const quickActions = [
-    { key: "voice" as Screen, title: "Voice chat", sub: "Talk with Maya", bg: "#EEEBFD", icon: <MicIcon size={19} className="text-brand" /> },
+    { key: "voice" as Screen, title: "Voice chat", sub: `Talk with ${activeTutor.name}`, bg: "#EEEBFD", icon: <MicIcon size={19} className="text-brand" /> },
     { key: "pron" as Screen, title: "Pronounce", sub: "Fix your accent", bg: "#FFEDE7", icon: <WaveIcon size={19} className="text-coral" /> },
     { key: "lesson" as Screen, title: "Lesson", sub: "Build sentences", bg: "#E3F6EE", icon: <LessonPairIcon size={19} color="#1FA971" /> },
     { key: "review" as Screen, title: "Review", sub: `${due} word${due === 1 ? "" : "s"} due`, bg: "#FDF0D8", icon: <CalendarIcon size={19} color="#C6890A" /> },
@@ -104,23 +106,32 @@ export default function Dashboard({ onNavigate }: { onNavigate: (s: Screen) => v
 
       <div className="mb-[26px] grid grid-cols-4 gap-3.5">
         {quickActions.map((a) => (
-          <div key={a.title} onClick={() => onNavigate(a.key)} className={`cursor-pointer rounded-[18px] border border-[#E7E4DD] bg-white p-[18px] ${cardHover}`}>
+          <button key={a.title} onClick={() => onNavigate(a.key)} className={`cursor-pointer rounded-[18px] border border-[#E7E4DD] bg-white p-[18px] text-left ${cardHover}`}>
             <div className="mb-3 flex h-[38px] w-[38px] items-center justify-center rounded-[11px]" style={{ background: a.bg }}>
               {a.icon}
             </div>
             <div className="mb-0.5 text-[14.5px] font-bold">{a.title}</div>
             <div className="text-[12.5px] text-[#8b887f]">{a.sub}</div>
-          </div>
+          </button>
         ))}
       </div>
 
       <div className="mb-3.5 flex items-baseline justify-between">
         <h3 className="m-0 font-display text-[19px] font-bold tracking-[-.02em]">Your AI tutors</h3>
-        <a onClick={() => onNavigate("tutors")} className="cursor-pointer text-[13.5px] font-bold">Browse all →</a>
+        <button onClick={() => onNavigate("tutors")} className="cursor-pointer text-[13.5px] font-bold text-brand">Browse all →</button>
       </div>
       <div className="mb-[26px] grid grid-cols-4 gap-3.5">
         {tutors.map((t) => (
-          <div key={t.name} onClick={() => onNavigate("voice")} className={`cursor-pointer rounded-[18px] border border-[#E7E4DD] bg-white p-[18px] ${cardHover}`}>
+          <button
+            key={t.name}
+            // Pick the tutor you actually clicked, rather than dropping into a
+            // session with whoever happened to be active.
+            onClick={() => {
+              setActive(t.name);
+              onNavigate("voice");
+            }}
+            className={`cursor-pointer rounded-[18px] border border-[#E7E4DD] bg-white p-[18px] text-left ${cardHover}`}
+          >
             <div className="mb-3 flex items-center gap-3">
               <div className="flex h-[46px] w-[46px] items-center justify-center rounded-[14px] font-display text-[17px] font-extrabold text-white" style={{ background: t.grad }}>
                 {t.initials}
@@ -131,14 +142,14 @@ export default function Dashboard({ onNavigate }: { onNavigate: (s: Screen) => v
               </div>
             </div>
             <div className="min-h-[38px] text-[12.5px] leading-[1.5] text-[#6b6862]">{t.blurb}</div>
-          </div>
+          </button>
         ))}
       </div>
 
       <h3 className="m-0 mb-3.5 font-display text-[19px] font-bold tracking-[-.02em]">Recommended for you</h3>
       <div className="grid grid-cols-3 gap-3.5">
         {recommended.map((r) => (
-          <div key={r.title} onClick={() => onNavigate("lesson")} className={`cursor-pointer overflow-hidden rounded-[18px] border border-[#E7E4DD] bg-white ${cardHover}`}>
+          <button key={r.title} onClick={() => onNavigate("lesson")} className={`cursor-pointer overflow-hidden rounded-[18px] border border-[#E7E4DD] bg-white text-left ${cardHover}`}>
             <div className="flex h-24 items-end p-3" style={{ background: r.grad }}>
               <span className="rounded-full bg-white/90 px-[9px] py-1 text-[11px] font-extrabold tracking-[.02em] text-ink">{r.tag}</span>
             </div>
@@ -146,7 +157,7 @@ export default function Dashboard({ onNavigate }: { onNavigate: (s: Screen) => v
               <div className="mb-[3px] text-[15px] font-bold">{r.title}</div>
               <div className="text-[12.5px] text-[#8b887f]">{r.meta}</div>
             </div>
-          </div>
+          </button>
         ))}
       </div>
     </div>

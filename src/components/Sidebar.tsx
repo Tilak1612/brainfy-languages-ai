@@ -1,4 +1,6 @@
+import { useEffect, useRef, useState } from "react";
 import type { Screen } from "../data";
+import { actions, useStore } from "../lib/store";
 import {
   BrandLogoIcon,
   HomeIcon,
@@ -32,6 +34,19 @@ export default function Sidebar({
   screen: Screen;
   onNavigate: (s: Screen) => void;
 }) {
+  const xp = useStore((s) => s.xp);
+  const streak = useStore((s) => s.streak);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onDown(e: MouseEvent) {
+      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, []);
+
   return (
     <aside className="flex w-[264px] flex-none flex-col gap-1.5 bg-sidebar px-4 py-[22px] text-[#EDECF0]">
       {/* Brand */}
@@ -84,15 +99,40 @@ export default function Sidebar({
           </button>
         </div>
 
-        <div className="flex items-center gap-2.5 px-1.5 py-1">
-          <div className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[linear-gradient(135deg,#FFB27A,#FF6B4A)] text-[13px] font-bold text-white">
-            SA
-          </div>
-          <div className="flex-1 leading-[1.15]">
-            <div className="text-[13px] font-bold">Sofia Alvarez</div>
-            <div className="text-[11.5px] text-[#8C8A96]">B2 · Learning EN</div>
-          </div>
-          <ChevronDownIcon size={16} className="text-[#8C8A96]" />
+        <div ref={menuRef} className="relative">
+          {menuOpen && (
+            <div className="absolute bottom-[calc(100%+8px)] left-0 right-0 overflow-hidden rounded-xl border border-white/[.1] bg-[#211f2b] py-1 shadow-[0_18px_44px_-16px_rgba(0,0,0,.7)]">
+              <div className="px-3 py-2 text-[11.5px] leading-[1.5] text-[#8C8A96]">
+                {xp.toLocaleString()} XP · {streak}-day streak
+              </div>
+              <button
+                onClick={() => {
+                  if (confirm("Reset all local progress? Your XP, streak and review history will be cleared.")) {
+                    actions.reset();
+                    setMenuOpen(false);
+                  }
+                }}
+                className="w-full border-t border-white/[.08] px-3 py-2 text-left text-[12.5px] font-semibold text-[#e9e7f0] transition hover:bg-white/[.06]"
+              >
+                Reset progress
+              </button>
+            </div>
+          )}
+          <button
+            onClick={() => setMenuOpen((m) => !m)}
+            aria-expanded={menuOpen}
+            aria-haspopup="menu"
+            className="flex w-full items-center gap-2.5 rounded-lg px-1.5 py-1 text-left transition hover:bg-white/[.06]"
+          >
+            <div className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[linear-gradient(135deg,#FFB27A,#FF6B4A)] text-[13px] font-bold text-white">
+              SA
+            </div>
+            <div className="flex-1 leading-[1.15]">
+              <div className="text-[13px] font-bold">Sofia Alvarez</div>
+              <div className="text-[11.5px] text-[#8C8A96]">B2 · Learning EN</div>
+            </div>
+            <ChevronDownIcon size={16} className="text-[#8C8A96]" />
+          </button>
         </div>
       </div>
     </aside>
