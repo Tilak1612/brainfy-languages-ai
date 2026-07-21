@@ -9,7 +9,11 @@ import { createClient } from "@supabase/supabase-js";
 // Every call costs money, so the endpoint is gated: the caller must present a
 // Supabase access token, and each user gets a bounded number of calls per hour.
 
-const HOURLY_LIMIT = Number(process.env.CHAT_HOURLY_LIMIT ?? 120);
+// 40/hr is well above real usage (an engaged learner runs ~30 turns per DAY)
+// while bounding the damage one account can do. At Opus 4.8 rates a turn costs
+// ~$0.005, so 120/hr let a single subscriber burn ~$147/month — more than any
+// consumer price point recovers. 40/hr caps that at ~$49.
+const HOURLY_LIMIT = Number(process.env.CHAT_HOURLY_LIMIT ?? 40);
 
 /** Resolve the caller from their bearer token, or null if not signed in. */
 async function authenticate(req: VercelRequest) {
