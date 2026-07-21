@@ -109,11 +109,12 @@ export default function Sidebar({
             <span className="grad-brand h-[7px] w-[7px] rounded-full" />
             Brainfy Pro
           </div>
-          {/* TODO(copy): these claims are not shipping features — the app is
-              English-only and has no exam coaching. Must be rewritten before
-              this button is pointed at LIVE Stripe keys. Awaiting sign-off. */}
+          {/* Every claim here must be a shipping feature. The previous copy
+              promised "all 200+ languages & exam coaching" — the app is
+              English-only and has neither. Avoid "unlimited": Pro is capped at
+              CHAT_HOURLY_LIMIT (40/hr). */}
           <div className="mb-3 text-[12.5px] leading-[1.5] text-[#9d9baa]">
-            Unlimited voice minutes, all 200+ languages & exam coaching.
+            Voice practice with every tutor, custom tutors and pronunciation feedback.
           </div>
           <button
             onClick={async () => {
