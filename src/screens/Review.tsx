@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import type { Screen } from "../data";
 import { BackIcon } from "../components/icons";
-import { vocabDeck } from "../content/learning";
+import { useContent } from "../lib/content";
 import { actions, getState } from "../lib/store";
 import { isDue } from "../lib/srs";
 import type { Grade } from "../lib/srs";
@@ -14,15 +14,20 @@ const GRADES: { g: Grade; label: string; cls: string }[] = [
 ];
 
 export default function Review({ onNavigate }: { onNavigate: (s: Screen) => void }) {
-  // Build today's queue once on mount: due cards (unseen count as due).
+  const { vocab } = useContent();
+
+  // Build today's queue from due cards (unseen count as due). Recomputed when
+  // the deck arrives from the database, but NOT when card state changes — the
+  // queue must stay stable while you work through it, or grading a card would
+  // remove it mid-session and shuffle the remaining ones.
   const queue = useMemo(() => {
     const now = Date.now();
     const cards = getState().cards;
-    return vocabDeck.filter((c) => {
+    return vocab.filter((c) => {
       const st = cards[c.id];
       return !st || isDue(st, now);
     });
-  }, []);
+  }, [vocab]);
 
   const [pos, setPos] = useState(0);
   const [revealed, setRevealed] = useState(false);

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Screen } from "../data";
 import { BackIcon, SkipIcon, CubeIcon, SparkleIcon } from "../components/icons";
-import { lessonItems, type BuilderItem } from "../content/learning";
+import { type BuilderItem } from "../content/learning";
+import { useContent } from "../lib/content";
 import { actions } from "../lib/store";
 import { checkAi, streamChat, GRAMMAR_SYSTEM } from "../lib/chat";
 import { checkVoice, speak, stopSpeaking } from "../lib/voice";
@@ -35,7 +36,8 @@ export default function Lesson({ onNavigate }: { onNavigate: (s: Screen) => void
     return stopSpeaking;
   }, []);
 
-  const item: BuilderItem = lessonItems[idx];
+  const { lessons } = useContent();
+  const item: BuilderItem = lessons[idx] ?? lessons[0];
   const bank = useMemo(() => shuffle(item.bank), [item.id]);
   const tokens = picked.map((p) => p.split("#")[0]);
   const target = item.answer.join(" ");
@@ -86,7 +88,7 @@ export default function Lesson({ onNavigate }: { onNavigate: (s: Screen) => void
     setPicked([]);
     setExplanation("");
     stopSpeaking();
-    if (idx + 1 >= lessonItems.length) {
+    if (idx + 1 >= lessons.length) {
       actions.completeLesson();
       actions.registerActivity(4);
       setDone(true);
@@ -135,11 +137,11 @@ export default function Lesson({ onNavigate }: { onNavigate: (s: Screen) => void
         <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-[#E4E1DA]">
           <div
             className="h-full rounded-full bg-[linear-gradient(90deg,#8B7CF6,#5B4BE8)] transition-[width] duration-300"
-            style={{ width: `${(idx / lessonItems.length) * 100}%` }}
+            style={{ width: `${(idx / lessons.length) * 100}%` }}
           />
         </div>
         <div className="text-[13.5px] font-bold text-[#8b887f]">
-          {idx + 1} / {lessonItems.length}
+          {idx + 1} / {lessons.length}
         </div>
       </div>
 

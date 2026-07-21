@@ -4,7 +4,7 @@ import { MicIcon, WaveIcon, LessonPairIcon, CalendarIcon } from "../components/i
 import { useStore, dueCount } from "../lib/store";
 import { setActive, useActiveTutor } from "../lib/tutors";
 import { useDisplayName } from "../lib/auth";
-import { vocabDeck } from "../content/learning";
+import { useContent } from "../lib/content";
 
 const cardHover =
   "transition-[.18s] hover:-translate-y-0.5 hover:shadow-[0_12px_28px_-14px_rgba(20,20,30,.22)]";
@@ -15,7 +15,8 @@ export default function Dashboard({ onNavigate }: { onNavigate: (s: Screen) => v
   const minutesToday = useStore((s) => s.minutesToday);
   const dailyGoalMin = useStore((s) => s.dailyGoalMin);
   useStore((s) => s.cards); // re-render when SRS state changes
-  const due = dueCount(vocabDeck.map((v) => v.id));
+  const { vocab } = useContent();
+  const due = dueCount(vocab.map((v) => v.id));
   const activeTutor = useActiveTutor();
   const learner = useDisplayName();
   // The design said "Good afternoon" at every hour; greet by the real clock.

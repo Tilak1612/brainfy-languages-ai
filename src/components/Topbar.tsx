@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { SearchIcon, FlameIcon, StarIcon, BellIcon } from "./icons";
 import { useStore, dueCount } from "../lib/store";
 import { search } from "../lib/search";
-import { vocabDeck } from "../content/learning";
+import { useContent } from "../lib/content";
 import type { Screen } from "../data";
 
 export default function Topbar({ onNavigate }: { onNavigate: (s: Screen) => void }) {
@@ -21,7 +21,8 @@ export default function Topbar({ onNavigate }: { onNavigate: (s: Screen) => void
 
   const hits = useMemo(() => search(q), [q]);
   // Same source of truth as the dashboard's "N words due" tile.
-  const due = useMemo(() => dueCount(vocabDeck.map((v) => v.id)), [cards]);
+  const { vocab } = useContent();
+  const due = useMemo(() => dueCount(vocab.map((v) => v.id)), [cards, vocab]);
 
   // Live, honest notifications — every line is derived from real state.
   const notes = useMemo(() => {
