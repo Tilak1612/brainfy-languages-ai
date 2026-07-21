@@ -3,6 +3,7 @@ import type { Screen } from "../data";
 import { actions, useStore } from "../lib/store";
 import { authEnabled } from "../lib/supabase";
 import { useAuth, signOut } from "../lib/auth";
+import { useBilling, startCheckout, openPortal } from "../lib/billing";
 import {
   BrandLogoIcon,
   HomeIcon,
@@ -39,8 +40,10 @@ export default function Sidebar({
   const xp = useStore((s) => s.xp);
   const streak = useStore((s) => s.streak);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { session } = useAuth();
+  const billing = useBilling();
 
   // Signed in: show who you actually are. Demo mode: the design's persona.
   const meta = session?.user?.user_metadata as { display_name?: string } | undefined;
@@ -106,11 +109,27 @@ export default function Sidebar({
             <span className="grad-brand h-[7px] w-[7px] rounded-full" />
             Brainfy Pro
           </div>
+          {/* TODO(copy): these claims are not shipping features — the app is
+              English-only and has no exam coaching. Must be rewritten before
+              this button is pointed at LIVE Stripe keys. Awaiting sign-off. */}
           <div className="mb-3 text-[12.5px] leading-[1.5] text-[#9d9baa]">
             Unlimited voice minutes, all 200+ languages & exam coaching.
           </div>
-          <button className="grad-brand w-full rounded-[10px] py-[9px] text-[13px] font-bold text-white transition hover:brightness-[1.08]">
-            Upgrade
+          <button
+            onClick={async () => {
+              if (busy) return;
+              setBusy(true);
+              const ok = billing.isPro ? await openPortal() : await startCheckout("monthly");
+              if (!ok) {
+                setBusy(false);
+                alert("Billing isn't configured on this deployment yet.");
+              }
+              // On success the browser navigates to Stripe; leave busy set.
+            }}
+            disabled={busy || !billing.ready}
+            className="grad-brand w-full rounded-[10px] py-[9px] text-[13px] font-bold text-white transition hover:brightness-[1.08] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {busy ? "One moment…" : billing.isPro ? "Manage billing" : "Upgrade"}
           </button>
         </div>
 

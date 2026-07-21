@@ -9,11 +9,13 @@ import { createClient } from "@supabase/supabase-js";
 // Every call costs money, so the endpoint is gated: the caller must present a
 // Supabase access token, and each user gets a bounded number of calls per hour.
 
-// 40/hr is well above real usage (an engaged learner runs ~30 turns per DAY)
-// while bounding the damage one account can do. At Opus 4.8 rates a turn costs
-// ~$0.005, so 120/hr let a single subscriber burn ~$147/month — more than any
-// consumer price point recovers. 40/hr caps that at ~$49.
-const HOURLY_LIMIT = Number(process.env.CHAT_HOURLY_LIMIT ?? 40);
+// Pro: 40/hr is well above real usage (an engaged learner runs ~30 turns per
+// DAY) while bounding the damage one account can do. At Opus 4.8 rates a turn
+// costs ~$0.005, so the old 120/hr let one subscriber burn ~$147/month — more
+// than any consumer price point recovers. 40/hr caps that at ~$49.
+// Free: 10/day is ~$1.50/month of exposure per free account.
+const PRO_HOURLY_LIMIT = Number(process.env.CHAT_HOURLY_LIMIT ?? 40);
+const FREE_DAILY_LIMIT = Number(process.env.CHAT_FREE_DAILY_LIMIT ?? 10);
 
 /** Resolve the caller from their bearer token, or null if not signed in. */
 async function authenticate(req: VercelRequest) {
@@ -51,16 +53,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  // Quota. RLS scopes both statements to this user.
+  // Quota. RLS scopes every statement here to this user.
   if (auth.client && auth.userId) {
-    const since = new Date(Date.now() - 3600_000).toISOString();
+    // Entitlement comes from our Stripe mirror, which only the webhook can
+    // write — a user cannot promote themselves by editing their own row.
+    const { data: sub } = await auth.client
+      .from("lang_subscriptions")
+      .select("status")
+      .maybeSingle();
+    const status = (sub as { status?: string } | null)?.status;
+    // past_due keeps access through Stripe's retry window rather than cutting
+    // off a paying customer on a transient card failure.
+    const isPro = status === "trialing" || status === "active" || status === "past_due";
+
+    const windowMs = isPro ? 3600_000 : 86_400_000;
+    const limit = isPro ? PRO_HOURLY_LIMIT : FREE_DAILY_LIMIT;
+    const since = new Date(Date.now() - windowMs).toISOString();
+
     const { count } = await auth.client
       .from("lang_api_usage")
       .select("id", { count: "exact", head: true })
       .eq("endpoint", "chat")
       .gte("created_at", since);
-    if ((count ?? 0) >= HOURLY_LIMIT) {
-      res.status(429).end("hourly limit reached — try again later");
+
+    if ((count ?? 0) >= limit) {
+      res.setHeader("content-type", "application/json");
+      res.status(429).end(
+        JSON.stringify({
+          error: isPro
+            ? "You've hit this hour's limit — try again shortly."
+            : `You've used your ${FREE_DAILY_LIMIT} free messages for today. Upgrade for more.`,
+          upgrade: !isPro,
+        }),
+      );
       return;
     }
     await auth.client.from("lang_api_usage").insert({ user_id: auth.userId, endpoint: "chat" });

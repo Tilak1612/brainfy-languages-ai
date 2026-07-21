@@ -13,7 +13,8 @@
     "@anthropic-ai/sdk": "^0.111.0",
     "@supabase/supabase-js": "^2.110.7",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react-dom": "^19.2.7",
+    "stripe": "^22.3.2"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.2",
