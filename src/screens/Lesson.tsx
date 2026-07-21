@@ -4,7 +4,7 @@ import { BackIcon, SkipIcon, CubeIcon, SparkleIcon } from "../components/icons";
 import { type BuilderItem } from "../content/learning";
 import { useContent } from "../lib/content";
 import { actions } from "../lib/store";
-import { checkAi, streamChat, GRAMMAR_SYSTEM } from "../lib/chat";
+import { checkAi, streamChat, GRAMMAR_COACH } from "../lib/chat";
 import { checkVoice, speak, stopSpeaking } from "../lib/voice";
 
 type Feedback = null | "correct" | "wrong";
@@ -53,7 +53,7 @@ export default function Lesson({ onNavigate }: { onNavigate: (s: Screen) => void
     setExplaining(true);
     setExplanation("");
     try {
-      await streamChat(GRAMMAR_SYSTEM, [{ role: "user", content: target }], (delta) =>
+      await streamChat(GRAMMAR_COACH, [{ role: "user", content: target }], (delta) =>
         setExplanation((e) => e + delta),
       );
     } catch {
@@ -130,6 +130,7 @@ export default function Lesson({ onNavigate }: { onNavigate: (s: Screen) => void
       <div className="mb-6 flex items-center gap-3.5">
         <button
           onClick={() => onNavigate("dashboard")}
+          aria-label="Back to dashboard"
           className="flex h-10 w-10 items-center justify-center rounded-[11px] border border-[#E4E1DA] bg-white text-[#4b4842] transition hover:bg-[#e9e6df]"
         >
           <BackIcon size={18} />
@@ -140,16 +141,16 @@ export default function Lesson({ onNavigate }: { onNavigate: (s: Screen) => void
             style={{ width: `${(idx / lessons.length) * 100}%` }}
           />
         </div>
-        <div className="text-[13.5px] font-bold text-[#8b887f]">
+        <div className="text-[13.5px] font-bold text-muted">
           {idx + 1} / {lessons.length}
         </div>
       </div>
 
       <div className="rounded-[24px] border border-[#E7E4DD] bg-white px-9 py-[38px] shadow-[0_1px_2px_rgba(20,20,30,.04)]">
-        <div className="mb-[22px] inline-flex items-center gap-[7px] rounded-full bg-brand-tint px-3 py-1.5 text-[12px] font-extrabold tracking-[.03em] text-brand">
+        <h1 className="mb-[22px] inline-flex items-center gap-[7px] rounded-full bg-brand-tint px-3 py-1.5 text-[12px] font-extrabold tracking-[.03em] text-brand">
           SENTENCE BUILDER
-        </div>
-        <div className="mb-2 text-[14px] font-semibold text-[#8b887f]">{item.hint}</div>
+        </h1>
+        <div className="mb-2 text-[14px] font-semibold text-muted">{item.hint}</div>
         <h2 className="m-0 mb-[30px] font-display text-[28px] font-bold tracking-[-.02em]">{item.prompt}</h2>
 
         {/* Answer slots */}
@@ -192,12 +193,12 @@ export default function Lesson({ onNavigate }: { onNavigate: (s: Screen) => void
 
         {/* Feedback banner */}
         {feedback === "correct" && (
-          <div className="mb-5 rounded-[14px] border border-[#B8E6D2] bg-[#E3F6EE] px-4 py-3 text-[14px] font-semibold text-green">
+          <div role="alert" className="mb-5 rounded-[14px] border border-[#B8E6D2] bg-[#E3F6EE] px-4 py-3 text-[14px] font-semibold text-green">
             ¡Correcto! +10 XP
           </div>
         )}
         {feedback === "wrong" && (
-          <div className="mb-5 rounded-[14px] border border-[#FADDD2] bg-[#FFF6F3] px-4 py-3 text-[14px] text-[#5c4238]">
+          <div role="alert" className="mb-5 rounded-[14px] border border-[#FADDD2] bg-[#FFF6F3] px-4 py-3 text-[14px] text-[#5c4238]">
             Not quite. Correct answer: <b>{item.answer.join(" ")}</b>
           </div>
         )}
@@ -205,7 +206,7 @@ export default function Lesson({ onNavigate }: { onNavigate: (s: Screen) => void
         <div className="flex items-center justify-between gap-4">
           <button
             onClick={next}
-            className="flex items-center gap-[7px] text-[14px] font-bold text-[#8b887f] transition hover:text-ink"
+            className="flex items-center gap-[7px] text-[14px] font-bold text-muted transition hover:text-ink"
           >
             <SkipIcon size={17} />
             Skip
@@ -236,7 +237,7 @@ export default function Lesson({ onNavigate }: { onNavigate: (s: Screen) => void
           title={voiceReady ? "Hear the sentence read aloud" : "Voice isn't configured on this server"}
           className="flex flex-1 items-center justify-center gap-2 rounded-[13px] border border-[#E4E1DA] bg-white py-[13px] text-[13.5px] font-bold text-[#4b4842] transition hover:bg-[#f3f1ec] disabled:cursor-not-allowed disabled:opacity-40"
         >
-          <CubeIcon size={17} className="text-[#8b887f]" />
+          <CubeIcon size={17} className="text-muted" />
           Hear it
         </button>
         <button
@@ -245,7 +246,7 @@ export default function Lesson({ onNavigate }: { onNavigate: (s: Screen) => void
           title={aiReady ? "Ask the grammar coach about this sentence" : "AI isn't configured on this server"}
           className="flex flex-1 items-center justify-center gap-2 rounded-[13px] border border-[#E4E1DA] bg-white py-[13px] text-[13.5px] font-bold text-[#4b4842] transition hover:bg-[#f3f1ec] disabled:cursor-not-allowed disabled:opacity-40"
         >
-          <SparkleIcon size={17} color="#8b887f" filled={false} />
+          <SparkleIcon size={17} color="#6b6862" filled={false} />
           {explaining ? "Explaining…" : "Explain grammar"}
         </button>
       </div>

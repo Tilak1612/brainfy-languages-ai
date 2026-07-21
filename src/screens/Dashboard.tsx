@@ -15,7 +15,7 @@ export default function Dashboard({ onNavigate }: { onNavigate: (s: Screen) => v
   const minutesToday = useStore((s) => s.minutesToday);
   const dailyGoalMin = useStore((s) => s.dailyGoalMin);
   useStore((s) => s.cards); // re-render when SRS state changes
-  const { vocab } = useContent();
+  const { vocab, lessons } = useContent();
   const due = dueCount(vocab.map((v) => v.id));
   const activeTutor = useActiveTutor();
   const learner = useDisplayName();
@@ -38,7 +38,7 @@ export default function Dashboard({ onNavigate }: { onNavigate: (s: Screen) => v
     <div className="anim-fade mx-auto max-w-[1180px]">
       <div className="mb-[26px] flex items-end justify-between gap-5">
         <div>
-          <div className="mb-[5px] text-[13.5px] font-bold tracking-[.02em] text-[#8b887f]">{greeting}, {learner}</div>
+          <div className="mb-[5px] text-[13.5px] font-bold tracking-[.02em] text-muted">{greeting}, {learner}</div>
           <h1 className="m-0 font-display text-[32px] font-extrabold leading-[1.05] tracking-[-.025em]">Let's keep your streak alive.</h1>
         </div>
         <button
@@ -59,22 +59,21 @@ export default function Dashboard({ onNavigate }: { onNavigate: (s: Screen) => v
               CONTINUE LEARNING
             </div>
             <h2 className="m-0 mb-1.5 font-display text-[24px] font-bold tracking-[-.02em]">Ordering at a Café</h2>
-            <div className="mb-5 text-[14px] text-[#a9a7b6]">Unit 4 · Real-world conversation · 6 min left</div>
-            <div className="mb-[22px] h-2 max-w-[340px] overflow-hidden rounded-full bg-white/[.12]">
-              <div className="h-full w-[68%] rounded-full bg-[linear-gradient(90deg,#8B7CF6,#5B4BE8)]" />
+            <div className="mb-[22px] text-[14px] text-[#a9a7b6]">
+              {lessons.length} sentence-building exercises · real-world conversation
             </div>
             <button
               onClick={() => onNavigate("lesson")}
               className="rounded-[11px] bg-white px-5 py-[11px] text-[14px] font-bold text-[#17161C] transition hover:brightness-[1.05]"
             >
-              Resume lesson
+              Start lesson
             </button>
           </div>
         </div>
 
         <div className="flex flex-col rounded-[22px] border border-[#E7E4DD] bg-white p-6 shadow-[0_1px_2px_rgba(20,20,30,.04)]">
           <div className="mb-0.5 font-display text-[16px] font-bold">Daily goal</div>
-          <div className="mb-3.5 text-[13px] text-[#8b887f]">
+          <div className="mb-3.5 text-[13px] text-muted">
             {minutesToday} of {dailyGoalMin} min completed
           </div>
           <div className="relative flex flex-1 items-center justify-center">
@@ -102,7 +101,7 @@ export default function Dashboard({ onNavigate }: { onNavigate: (s: Screen) => v
             </svg>
             <div className="absolute text-center">
               <div className="font-display text-[30px] font-extrabold tracking-[-.02em]">{pct}%</div>
-              <div className="text-[11.5px] font-semibold text-[#8b887f]">
+              <div className="text-[11.5px] font-semibold text-muted">
                 {minutesLeft > 0 ? `${minutesLeft} min to go` : "goal met!"}
               </div>
             </div>
@@ -117,7 +116,7 @@ export default function Dashboard({ onNavigate }: { onNavigate: (s: Screen) => v
               {a.icon}
             </div>
             <div className="mb-0.5 text-[14.5px] font-bold">{a.title}</div>
-            <div className="text-[12.5px] text-[#8b887f]">{a.sub}</div>
+            <div className="text-[12.5px] text-muted">{a.sub}</div>
           </button>
         ))}
       </div>
@@ -144,7 +143,7 @@ export default function Dashboard({ onNavigate }: { onNavigate: (s: Screen) => v
               </div>
               <div className="leading-[1.2]">
                 <div className="text-[15px] font-bold">{t.name}</div>
-                <div className="text-[12px] text-[#8b887f]">{t.role}</div>
+                <div className="text-[12px] text-muted">{t.role}</div>
               </div>
             </div>
             <div className="min-h-[38px] text-[12.5px] leading-[1.5] text-[#6b6862]">{t.blurb}</div>
@@ -161,7 +160,7 @@ export default function Dashboard({ onNavigate }: { onNavigate: (s: Screen) => v
             </div>
             <div className="px-4 pb-[17px] pt-[15px]">
               <div className="mb-[3px] text-[15px] font-bold">{r.title}</div>
-              <div className="text-[12.5px] text-[#8b887f]">{r.meta}</div>
+              <div className="text-[12.5px] text-muted">{r.meta}</div>
             </div>
           </button>
         ))}

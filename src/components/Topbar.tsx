@@ -71,7 +71,7 @@ export default function Topbar({ onNavigate }: { onNavigate: (s: Screen) => void
   return (
     <header className="relative z-[5] flex h-[66px] flex-none items-center gap-4 border-b border-[#E4E1DA] bg-cream/[.82] px-7 backdrop-blur-[10px]">
       <div ref={searchRef} className="relative mr-auto min-w-[150px] max-w-[420px] flex-1">
-        <div className="flex items-center gap-2.5 rounded-[11px] border border-[#E4E1DA] bg-white px-[13px] py-[9px] text-[#8b887f] focus-within:border-brand">
+        <div className="flex items-center gap-2.5 rounded-[11px] border border-[#E4E1DA] bg-white px-[13px] py-[9px] text-muted focus-within:border-brand">
           <SearchIcon size={16} className="flex-none" />
           <input
             value={q}
@@ -84,14 +84,14 @@ export default function Topbar({ onNavigate }: { onNavigate: (s: Screen) => void
             onKeyDown={onKeyDown}
             aria-label="Search lessons, tutors and words"
             placeholder="Search lessons, tutors, words…"
-            className="w-full bg-transparent text-[13.5px] text-ink outline-none placeholder:text-[#8b887f]"
+            className="w-full bg-transparent text-[13.5px] text-ink outline-none placeholder:text-muted"
           />
         </div>
 
         {open && q.trim() !== "" && (
           <div className="absolute left-0 right-0 top-[calc(100%+6px)] overflow-hidden rounded-[13px] border border-[#E4E1DA] bg-white py-1.5 shadow-[0_18px_44px_-16px_rgba(25,24,23,.35)]">
             {hits.length === 0 ? (
-              <div className="px-3.5 py-2.5 text-[13px] text-[#8b887f]">No matches for “{q}”.</div>
+              <div className="px-3.5 py-2.5 text-[13px] text-muted">No matches for “{q}”.</div>
             ) : (
               hits.map((h, i) => (
                 <button
@@ -107,7 +107,7 @@ export default function Topbar({ onNavigate }: { onNavigate: (s: Screen) => void
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[13.5px] font-semibold text-ink">{h.label}</span>
-                    <span className="block truncate text-[12px] text-[#8b887f]">{h.detail}</span>
+                    <span className="block truncate text-[12px] text-muted">{h.detail}</span>
                   </span>
                 </button>
               ))
@@ -152,7 +152,7 @@ export default function Topbar({ onNavigate }: { onNavigate: (s: Screen) => void
 
         {bellOpen && (
           <div className="absolute right-0 top-[calc(100%+8px)] w-[268px] overflow-hidden rounded-[13px] border border-[#E4E1DA] bg-white shadow-[0_18px_44px_-16px_rgba(25,24,23,.35)]">
-            <div className="border-b border-[#EFECE5] px-3.5 py-2.5 text-[12.5px] font-extrabold tracking-[.04em] text-[#8b887f]">
+            <div className="border-b border-[#EFECE5] px-3.5 py-2.5 text-[12.5px] font-extrabold tracking-[.04em] text-muted">
               TODAY
             </div>
             {notes.map((n, i) => (

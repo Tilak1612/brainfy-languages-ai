@@ -65,6 +65,7 @@ export default function Review({ onNavigate }: { onNavigate: (s: Screen) => void
       <div className="mb-6 flex items-center gap-3.5">
         <button
           onClick={() => onNavigate("dashboard")}
+          aria-label="Back to dashboard"
           className="flex h-10 w-10 items-center justify-center rounded-[11px] border border-[#E4E1DA] bg-white text-[#4b4842] transition hover:bg-[#e9e6df]"
         >
           <BackIcon size={18} />
@@ -75,7 +76,7 @@ export default function Review({ onNavigate }: { onNavigate: (s: Screen) => void
             style={{ width: `${(pos / queue.length) * 100}%` }}
           />
         </div>
-        <div className="text-[13.5px] font-bold text-[#8b887f]">
+        <div className="text-[13.5px] font-bold text-muted">
           {pos + 1} / {queue.length}
         </div>
       </div>
@@ -86,11 +87,11 @@ export default function Review({ onNavigate }: { onNavigate: (s: Screen) => void
             NEW WORD
           </span>
         )}
-        <div className="font-display text-[40px] font-extrabold tracking-[-.02em]">{card.term}</div>
+        <h1 className="m-0 font-display text-[40px] font-extrabold tracking-[-.02em]">{card.term}</h1>
         {revealed ? (
           <>
-            <div className="mt-2 font-mono text-[15px] text-[#8b887f]">{card.ipa}</div>
-            <div className="mt-4 text-[22px] font-bold text-green">{card.translation}</div>
+            <div className="mt-2 font-mono text-[15px] text-muted">{card.ipa}</div>
+            <div role="status" className="mt-4 text-[22px] font-bold text-green">{card.translation}</div>
           </>
         ) : (
           <button
@@ -116,7 +117,7 @@ export default function Review({ onNavigate }: { onNavigate: (s: Screen) => void
         </div>
       )}
       {!revealed && (
-        <p className="mt-4 text-center text-[13px] text-[#8b887f]">
+        <p className="mt-4 text-center text-[13px] text-muted">
           Recall the meaning, then reveal and rate how well you knew it.
         </p>
       )}

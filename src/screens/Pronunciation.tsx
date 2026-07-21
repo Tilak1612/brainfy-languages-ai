@@ -1,156 +1,225 @@
 import { useEffect, useState } from "react";
 import { PlayIcon, MicIcon } from "../components/icons";
 import { actions } from "../lib/store";
-import { checkVoice, speak, stopSpeaking } from "../lib/voice";
+import { checkVoice, speak, stopSpeaking, Recorder, transcribe } from "../lib/voice";
+
+// This screen used to invent its results: a fixed array of phoneme scores was
+// shown on mount (before any recording existed), "Record again" called
+// Math.random() with weak sounds rigged to always improve, and the overall score
+// was the literal constant 83. Worse, that fabricated feedback wrote real XP,
+// real speaking mastery and real streak activity into Postgres — fake data
+// contaminating the honest ledger.
+//
+// It now measures something true. We have working speech recognition, so we
+// record the learner, transcribe it, and compare against the target word by
+// word. "The recognizer did not hear this word" is a real, defensible signal.
+// It is NOT phoneme-level scoring — that needs a dedicated vendor (Azure
+// Pronunciation Assessment, Speechace) — and the copy says so rather than
+// implying more precision than we have.
 
 const PHRASE = "Could I have a table for two, please?";
 
-interface Ph {
-  s: string;
-  acc: number; // 0..100
+/** Strip punctuation/case so "two," and "Two" compare equal. */
+function normalize(w: string): string {
+  return w.toLowerCase().replace(/[^a-z']/g, "");
 }
 
-const BASE: Ph[] = [
-  { s: "could", acc: 92 },
-  { s: "I", acc: 96 },
-  { s: "have", acc: 88 },
-  { s: "a", acc: 90 },
-  { s: "ta", acc: 62 },
-  { s: "ble", acc: 34 },
-  { s: "for", acc: 91 },
-  { s: "two", acc: 94 },
-  { s: "please", acc: 66 },
-];
-
-function colorFor(acc: number): string {
-  if (acc >= 85) return "#1FA971";
-  if (acc >= 60) return "#F5A524";
-  return "#E14E2A";
+interface WordResult {
+  word: string;
+  heard: boolean;
 }
 
-function reroll(prev: Ph[]): Ph[] {
-  // Simulate improvement: weak sounds drift up, strong ones stay high.
-  return prev.map((p) => {
-    const target = p.acc < 70 ? p.acc + 15 + Math.random() * 20 : 85 + Math.random() * 14;
-    return { ...p, acc: Math.max(30, Math.min(99, Math.round(target))) };
-  });
-}
+type Phase = "idle" | "recording" | "scoring" | "done" | "error";
 
 export default function Pronunciation() {
-  const [phs, setPhs] = useState<Ph[]>(BASE);
-  const [attempt, setAttempt] = useState(1);
   const [voiceReady, setVoiceReady] = useState(false);
+  const [phase, setPhase] = useState<Phase>("idle");
+  const [results, setResults] = useState<WordResult[] | null>(null);
+  const [heardText, setHeardText] = useState("");
+  const [attempt, setAttempt] = useState(0);
+  const [rec] = useState(() => new Recorder());
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     checkVoice().then(setVoiceReady);
     return stopSpeaking;
   }, []);
-  // First render matches the original design exactly (83); recomputed after re-record.
-  const overall = attempt === 1 ? 83 : Math.round(phs.reduce((a, p) => a + p.acc, 0) / phs.length);
-  const dash = 389.5;
-  const offset = dash * (1 - overall / 100);
-  const weakest = [...phs].sort((a, b) => a.acc - b.acc)[0];
 
-  function recordAgain() {
-    const next = reroll(phs);
-    setPhs(next);
-    setAttempt((a) => a + 1);
-    actions.recordAnswer("speaking", true);
-    actions.addXp(5);
-    actions.registerActivity(1);
+  const target = PHRASE.split(/\s+/);
+  const score =
+    results && results.length
+      ? Math.round((results.filter((r) => r.heard).length / results.length) * 100)
+      : null;
+  const missed = results?.filter((r) => !r.heard).map((r) => r.word) ?? [];
+
+  async function start() {
+    setMessage("");
+    try {
+      await rec.start();
+      setPhase("recording");
+    } catch {
+      setPhase("error");
+      setMessage("Microphone access was denied. Allow it in your browser to practise speaking.");
+    }
+  }
+
+  async function stop() {
+    setPhase("scoring");
+    try {
+      const pcm = await rec.stop();
+      const text = await transcribe(pcm);
+      setHeardText(text);
+
+      if (!text.trim()) {
+        setPhase("error");
+        setMessage("We couldn't hear anything. Check your microphone and try again.");
+        return;
+      }
+
+      const heardWords = new Set(text.split(/\s+/).map(normalize).filter(Boolean));
+      const next = target.map((w) => ({ word: w, heard: heardWords.has(normalize(w)) }));
+      setResults(next);
+      setAttempt((a) => a + 1);
+      setPhase("done");
+
+      // Only a genuine attempt earns credit, and only in proportion to what was
+      // actually recognised — no more "always improved, always +5 XP".
+      const correct = next.filter((r) => r.heard).length;
+      const ratio = correct / next.length;
+      actions.recordAnswer("speaking", ratio >= 0.7);
+      actions.addXp(Math.round(ratio * 8));
+      actions.registerActivity(1);
+    } catch {
+      setPhase("error");
+      setMessage("Couldn't process the audio. Try again in a moment.");
+    }
+  }
+
+  if (!voiceReady) {
+    return (
+      <div className="anim-fade mx-auto max-w-[620px] pt-10 text-center">
+        <h1 className="m-0 font-display text-[26px] font-extrabold tracking-[-.025em]">
+          Speaking practice
+        </h1>
+        <p className="mt-2 text-[14.5px] leading-[1.55] text-muted">
+          Speech recognition isn't configured on this deployment, so we can't check your
+          pronunciation yet. Everything else in the app still works.
+        </p>
+      </div>
+    );
   }
 
   return (
-    <div className="anim-fade mx-auto max-w-[900px]">
-      <h1 className="m-0 mb-1 font-display text-[28px] font-extrabold tracking-[-.025em]">Pronunciation feedback</h1>
-      <div className="mb-6 text-[14px] text-[#8b887f]">
-        Léo analyzed your recording phoneme by phoneme{attempt > 1 ? ` · attempt ${attempt}` : ""}.
-      </div>
+    <div className="anim-fade mx-auto max-w-[720px]">
+      <h1 className="m-0 mb-1 font-display text-[28px] font-extrabold tracking-[-.025em]">
+        Speaking practice
+      </h1>
+      <p className="mb-6 text-[14px] text-muted">
+        Say the phrase out loud. We'll show you which words the recogniser caught
+        {attempt > 0 ? ` · attempt ${attempt}` : ""}.
+      </p>
 
-      <div className="mb-[18px] grid grid-cols-[1fr_260px] gap-[18px]">
-        <div className="rounded-[22px] border border-[#E7E4DD] bg-white p-[26px]">
-          <div className="mb-3.5 text-[13px] font-semibold text-[#8b887f]">Target phrase</div>
-          <div className="mb-[26px] font-display text-[26px] font-bold leading-[1.3] tracking-[-.02em]">
-            {(() => {
-              const acc = (s: string) => phs.find((p) => p.s === s)?.acc ?? 100;
-              const ta = acc("ta"), ble = acc("ble"), please = acc("please");
-              return (
-                <>
-                  <span className="text-green">Could I have a </span>
-                  <span style={{ color: colorFor(ta) }}>ta</span>
-                  <span style={{ color: colorFor(ble), borderBottom: ble < 45 ? `3px solid ${colorFor(ble)}` : undefined }}>ble</span>
-                  <span className="text-green"> for two, </span>
-                  <span style={{ color: colorFor(please) }}>please?</span>
-                </>
-              );
-            })()}
-          </div>
-          <div className="mb-2 flex h-[70px] items-end gap-[3px] px-0.5">
-            {phs.map((p) => (
-              <div key={p.s} className="flex flex-1 flex-col items-center gap-1.5">
-                <div className="relative h-[44px] w-full overflow-hidden rounded-md bg-cream">
-                  <div className="absolute bottom-0 w-full rounded-md transition-[height] duration-500" style={{ height: `${p.acc}%`, background: colorFor(p.acc) }} />
-                </div>
-                <span className="text-[11px] font-semibold text-[#8b887f]">{p.s}</span>
-              </div>
-            ))}
-          </div>
-          <div className="mt-3.5 flex gap-[18px] text-[12px] text-[#6b6862]">
-            <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[3px] bg-green" />Accurate</div>
-            <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[3px] bg-gold" />Close</div>
-            <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[3px] bg-coral-deep" />Needs work</div>
-          </div>
+      <div className="rounded-[24px] border border-[#E7E4DD] bg-white px-8 py-9">
+        <div className="mb-2 text-[12.5px] font-extrabold tracking-[.04em] text-muted">
+          SAY THIS
         </div>
 
-        <div className="flex flex-col items-center justify-center rounded-[22px] bg-[linear-gradient(160deg,#211f2b,#141319)] p-6 text-white">
-          <div className="relative mb-2 flex h-[150px] w-[150px] items-center justify-center">
-            <svg width="150" height="150" viewBox="0 0 150 150">
-              <circle cx="75" cy="75" r="62" fill="none" stroke="rgba(255,255,255,.1)" strokeWidth="13" />
-              <circle cx="75" cy="75" r="62" fill="none" stroke="#3ee08b" strokeWidth="13" strokeLinecap="round" strokeDasharray={dash} strokeDashoffset={offset.toFixed(1)} transform="rotate(-90 75 75)" style={{ transition: "stroke-dashoffset .5s ease" }} />
-            </svg>
-            <div className="absolute text-center">
-              <div className="font-display text-[38px] font-extrabold tracking-[-.02em]">{overall}</div>
-              <div className="text-[11px] font-semibold text-[#a9a7b6]">accuracy</div>
+        {/* Per-word result. Before any attempt these are plain — no invented scores. */}
+        <p className="m-0 mb-7 font-display text-[26px] font-bold leading-[1.35] tracking-[-.02em]">
+          {target.map((w, i) => {
+            const r = results?.[i];
+            return (
+              <span
+                key={i}
+                className={
+                  r === undefined
+                    ? ""
+                    : r.heard
+                      ? "text-green"
+                      : "text-coral-deep underline decoration-wavy underline-offset-4"
+                }
+              >
+                {w}
+                {i < target.length - 1 ? " " : ""}
+              </span>
+            );
+          })}
+        </p>
+
+        {score !== null && phase === "done" && (
+          <div
+            role="status"
+            className="mb-7 rounded-[16px] border border-[#E7E4DD] bg-cream-soft px-5 py-4"
+          >
+            <div className="font-display text-[30px] font-extrabold tracking-[-.02em]">
+              {score}%
+              <span className="ml-2 align-middle text-[13px] font-semibold text-muted">
+                of words recognised
+              </span>
             </div>
-          </div>
-          <div className="text-center text-[13px] leading-[1.5] text-[#c9c7d4]">
-            {overall >= 90 ? "Excellent — native-like!" : overall >= 75 ? "Better than 71% of learners at your level" : "Keep drilling the weak sounds"}
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3.5">
-        <div className="rounded-[18px] border border-[#FADDD2] bg-[#FFF6F3] p-5">
-          <div className="mb-2.5 text-[12.5px] font-extrabold tracking-[.04em] text-coral-deep">FOCUS: THE "{attempt === 1 ? "BLE" : weakest.s.toUpperCase()}" SOUND</div>
-          <div className="text-[13.5px] leading-[1.55] text-[#5c4238]">
-            {attempt === 1 ? (
-              <>
-                You dropped the soft "l" in <b>ta-ble</b>. Place your tongue behind your top teeth and let the sound trail off. Tap below to hear Léo's model.
-              </>
+            {missed.length > 0 ? (
+              <p className="mt-1.5 text-[13.5px] leading-[1.55] text-[#5c4238]">
+                The recogniser didn't catch{" "}
+                <b>{missed.join(", ")}</b>. That usually means the word was rushed, dropped, or
+                blended into the next one — try saying it on its own, then in the full phrase.
+              </p>
             ) : (
-              <>
-                Your weakest sound is <b>{weakest.s}</b> at {weakest.acc}%. Place your tongue behind your top teeth and let the sound trail off. Tap to hear Léo's model.
-              </>
+              <p className="mt-1.5 text-[13.5px] text-[#3d3a52]">
+                Every word came through clearly. Try saying it a little faster to build fluency.
+              </p>
+            )}
+            {heardText && (
+              <p className="mt-2 text-[12.5px] text-muted">
+                We heard: “{heardText}”
+              </p>
             )}
           </div>
+        )}
+
+        {(phase === "error" || message) && (
+          <div
+            role="alert"
+            className="mb-6 rounded-[14px] border border-[#FADDD2] bg-[#FFF6F3] px-4 py-3 text-[13.5px] text-[#5c4238]"
+          >
+            {message}
+          </div>
+        )}
+
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={phase === "recording" ? stop : start}
+            disabled={phase === "scoring"}
+            aria-label={phase === "recording" ? "Stop recording and check" : "Record yourself saying the phrase"}
+            className={`flex items-center gap-2 rounded-[12px] px-5 py-3 text-[14px] font-bold text-white transition disabled:cursor-not-allowed disabled:opacity-50 ${
+              phase === "recording"
+                ? "bg-[linear-gradient(135deg,#FF6B4A,#E14E2A)]"
+                : "grad-brand"
+            }`}
+          >
+            <MicIcon size={16} className="text-white" />
+            {phase === "recording"
+              ? "Stop and check"
+              : phase === "scoring"
+                ? "Checking…"
+                : attempt > 0
+                  ? "Try again"
+                  : "Start recording"}
+          </button>
+
           <button
             onClick={() => void speak(PHRASE)}
-            disabled={!voiceReady}
-            title={voiceReady ? "Hear Léo say the phrase" : "Voice isn't configured on this server"}
-            className="mt-3.5 flex items-center gap-2 rounded-[11px] bg-[linear-gradient(135deg,#FF6B4A,#E14E2A)] px-4 py-2.5 text-[13px] font-bold text-white transition hover:brightness-[1.05] disabled:cursor-not-allowed disabled:opacity-40"
+            aria-label="Hear the phrase read aloud"
+            className="flex items-center gap-2 rounded-[12px] border border-[#E4E1DA] bg-white px-5 py-3 text-[14px] font-bold text-[#4b4842] transition hover:bg-[#f3f1ec]"
           >
             <PlayIcon size={15} />
-            Hear model
+            Hear it
           </button>
         </div>
-        <div className="flex flex-col rounded-[18px] border border-[#E7E4DD] bg-white p-5">
-          <div className="mb-2.5 text-[12.5px] font-extrabold tracking-[.04em] text-[#8b887f]">TRY AGAIN</div>
-          <div className="flex-1 text-[13.5px] leading-[1.55] text-[#6b6862]">Record the phrase once more and Léo will re-score the sounds you missed. +5 XP each try.</div>
-          <button onClick={recordAgain} className="grad-brand mt-3.5 flex items-center gap-2 self-start rounded-[11px] px-4 py-2.5 text-[13px] font-bold text-white transition hover:brightness-[1.05]">
-            <MicIcon size={15} className="text-white" />
-            Record again
-          </button>
-        </div>
+
+        <p className="mt-5 text-[12px] leading-[1.5] text-muted">
+          This checks whether speech recognition caught each word — a useful proxy for clarity,
+          but not a phoneme-level accent score.
+        </p>
       </div>
     </div>
   );

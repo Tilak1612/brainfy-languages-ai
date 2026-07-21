@@ -11,18 +11,26 @@ import type { CardState } from "./srs";
 
 const PUSH_DEBOUNCE_MS = 1200;
 
+/**
+ * A row as it actually arrives from PostgREST — every field optional and
+ * nullable. Typing these as required is what previously let a null column
+ * reach render as "NaN%" and crash the Progress screen; the compiler now
+ * forces the coercions in pull().
+ */
 interface ProgressRow {
-  xp: number;
-  coins: number;
-  streak: number;
-  last_active_date: string | null;
-  minutes_today: number;
-  daily_goal_min: number;
-  today_date: string;
-  skills: State["skills"];
-  words_learned: number;
-  achievements: string[];
-  lessons_completed: number;
+  xp?: number | null;
+  coins?: number | null;
+  streak?: number | null;
+  last_active_date?: string | null;
+  minutes_today?: number | null;
+  daily_goal_min?: number | null;
+  today_date?: string | null;
+  skills?: Partial<State["skills"]> | null;
+  words_learned?: number | null;
+  achievements?: string[] | null;
+  lessons_completed?: number | null;
+  conversations?: number | null;
+  daily_minutes?: Record<string, number> | null;
 }
 
 interface CardRow {
@@ -48,6 +56,8 @@ function toProgressRow(s: State, userId: string) {
     words_learned: s.wordsLearned,
     achievements: s.achievements,
     lessons_completed: s.lessonsCompleted,
+    conversations: s.conversations,
+    daily_minutes: s.dailyMinutes,
     updated_at: new Date().toISOString(),
   };
 }
@@ -80,18 +90,35 @@ export async function pull(userId: string): Promise<void> {
   }
 
   const p = progress as ProgressRow;
+  // Coerce every field. A nullable column, a schema drift, or a partial row
+  // used to flow straight into render: a null daily_goal_min made the dashboard
+  // compute 0/0 and display "NaN%", and a null skills object crashed the
+  // Progress screen outright (property read on null, no error boundary).
+  const num = (v: unknown, fallback: number) =>
+    typeof v === "number" && Number.isFinite(v) ? v : fallback;
+
   hydrate({
-    xp: p.xp,
-    coins: p.coins,
-    streak: p.streak,
-    lastActiveDate: p.last_active_date,
-    minutesToday: p.minutes_today,
-    dailyGoalMin: p.daily_goal_min,
-    todayDate: p.today_date,
-    skills: p.skills,
-    wordsLearned: p.words_learned,
-    achievements: p.achievements,
-    lessonsCompleted: p.lessons_completed,
+    xp: num(p.xp, 0),
+    coins: num(p.coins, 0),
+    streak: num(p.streak, 0),
+    lastActiveDate: p.last_active_date ?? null,
+    minutesToday: num(p.minutes_today, 0),
+    // Never 0 — it is a denominator on the dashboard ring.
+    dailyGoalMin: Math.max(1, num(p.daily_goal_min, 25)),
+    todayDate: p.today_date ?? new Date().toISOString().slice(0, 10),
+    skills: {
+      speaking: num(p.skills?.speaking, 0),
+      listening: num(p.skills?.listening, 0),
+      vocabulary: num(p.skills?.vocabulary, 0),
+      grammar: num(p.skills?.grammar, 0),
+      reading: num(p.skills?.reading, 0),
+    },
+    wordsLearned: num(p.words_learned, 0),
+    achievements: Array.isArray(p.achievements) ? p.achievements : [],
+    lessonsCompleted: num(p.lessons_completed, 0),
+    conversations: num(p.conversations, 0),
+    dailyMinutes:
+      p.daily_minutes && typeof p.daily_minutes === "object" ? p.daily_minutes : {},
     cards,
   });
 }

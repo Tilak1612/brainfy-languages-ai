@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
+import { resolveSystem } from "./_personas.js";
 
 // Production chat endpoint. Calls Claude server-side using ANTHROPIC_API_KEY
 // (set in the Vercel project's Environment Variables). The key is never sent to
@@ -17,12 +18,29 @@ import { createClient } from "@supabase/supabase-js";
 const PRO_HOURLY_LIMIT = Number(process.env.CHAT_HOURLY_LIMIT ?? 40);
 const FREE_DAILY_LIMIT = Number(process.env.CHAT_FREE_DAILY_LIMIT ?? 10);
 
+// Payload ceilings. A real tutor turn is a sentence or two; these are generous
+// for legitimate use and make the token cost of any single call bounded.
+const MAX_TURNS = 40;
+const MAX_MSG_CHARS = 4000;
+const MAX_TOTAL_CHARS = 40_000;
+
 /** Resolve the caller from their bearer token, or null if not signed in. */
 async function authenticate(req: VercelRequest) {
   const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
   const anon = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
-  // No project configured => open demo mode; nothing to authenticate against.
-  if (!url || !anon) return { ok: true as const, client: null, userId: null };
+
+  // FAIL CLOSED. This previously returned ok:true when the Supabase vars were
+  // absent, which skipped auth AND the quota entirely — one env-var scoping
+  // mistake (VITE_ vars are build-time by convention; scoping one to "Build
+  // only" is a plausible cleanup) silently exposed ANTHROPIC_API_KEY to the
+  // internet, with no symptom but a bill. Anonymous access now requires an
+  // explicit opt-in that nobody sets by accident.
+  if (!url || !anon) {
+    if (process.env.ALLOW_ANONYMOUS_AI === "1") {
+      return { ok: true as const, client: null, userId: null };
+    }
+    return { ok: false as const };
+  }
 
   const token = (req.headers.authorization ?? "").replace(/^Bearer /i, "");
   if (!token) return { ok: false as const };
@@ -60,6 +78,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { data: sub } = await auth.client
       .from("lang_subscriptions")
       .select("status")
+      .eq("user_id", auth.userId)
       .maybeSingle();
     const status = (sub as { status?: string } | null)?.status;
     // past_due keeps access through Stripe's retry window rather than cutting
@@ -73,6 +92,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { count } = await auth.client
       .from("lang_api_usage")
       .select("id", { count: "exact", head: true })
+      .eq("user_id", auth.userId)
       .eq("endpoint", "chat")
       .gte("created_at", since);
 
@@ -92,7 +112,47 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { system, messages } = req.body ?? {};
+    const { tutorId, custom, learner, messages } = req.body ?? {};
+
+    // The system prompt is resolved from a server-side table. The client sends
+    // an ID; it can never send prose.
+    const system = resolveSystem(tutorId, custom, learner);
+    if (!system) {
+      res.status(400).end("unknown tutor");
+      return;
+    }
+
+    // Validate the transcript. Without these caps a single ~4 MB body is on the
+    // order of a million input tokens, which made the per-request quota
+    // meaningless as a cost control.
+    if (!Array.isArray(messages) || messages.length === 0 || messages.length > MAX_TURNS) {
+      res.status(400).end("bad messages");
+      return;
+    }
+    let total = 0;
+    for (const m of messages) {
+      if (
+        !m ||
+        (m.role !== "user" && m.role !== "assistant") ||
+        typeof m.content !== "string" ||
+        m.content.length > MAX_MSG_CHARS
+      ) {
+        res.status(400).end("bad message");
+        return;
+      }
+      total += m.content.length;
+    }
+    if (total > MAX_TOTAL_CHARS) {
+      res.status(400).end("conversation too long");
+      return;
+    }
+    // A trailing assistant turn is a prefill: "Sure, here's how:" is a standard
+    // jailbreak that works even with the system prompt locked down.
+    if (messages[messages.length - 1].role !== "user") {
+      res.status(400).end("last message must be from the user");
+      return;
+    }
+
     const client = new Anthropic({ apiKey });
     const msg = await client.messages.create({
       model: "claude-opus-4-8",
@@ -108,6 +168,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader("content-type", "text/plain; charset=utf-8");
     res.status(200).end(text);
   } catch (e) {
-    res.status(500).end("error: " + (e instanceof Error ? e.message : String(e)));
+    // Detail stays server-side: SDK errors embed request ids, org identifiers
+    // and model config that shouldn't be handed to an anonymous caller.
+    console.error("/api/chat failed:", e);
+    res.status(500).end("internal error");
   }
 }

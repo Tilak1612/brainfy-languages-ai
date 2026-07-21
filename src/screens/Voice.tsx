@@ -21,7 +21,11 @@ export default function Voice() {
   const tutor = useActiveTutor();
   const learner = useDisplayName();
   const GREETING = `Hi ${learner}! ${tutor.name} here. What did you get up to today?`;
-  const system = tutor.system.replaceAll("{{LEARNER}}", learner);
+  // A persona REFERENCE. The prompt itself lives server-side — the client can
+  // no longer supply one, which is what made this endpoint a free Claude proxy.
+  const persona = tutor.custom
+    ? { tutorId: "custom" as const, custom: tutor.customFields, learner }
+    : { tutorId: tutor.id, learner };
   const [aiReady, setAiReady] = useState<boolean | null>(null);
   const [voiceReady, setVoiceReady] = useState(false);
   const [recording, setRecording] = useState(false);
@@ -109,7 +113,7 @@ export default function Voice() {
     apiMsgs.current.push({ role: "user", content: text });
     actions.recordAnswer("speaking", true);
     try {
-      const reply = await streamChat(system, apiMsgs.current, (delta) => {
+      const reply = await streamChat(persona, apiMsgs.current, (delta) => {
         setAiMsgs((m) => {
           const copy = [...m];
           copy[copy.length - 1] = { from: "maya", text: copy[copy.length - 1].text + delta };
@@ -327,7 +331,7 @@ export default function Voice() {
         <div className="flex min-h-0 flex-1 flex-col rounded-[22px] border border-[#E7E4DD] bg-white px-5 pb-4 pt-5">
           <div className="mb-3.5 flex items-center justify-between">
             <div className="font-display text-[16px] font-bold">Live transcript</div>
-            <div className="flex items-center gap-1.5 text-[12px] text-[#8b887f]">
+            <div className="flex items-center gap-1.5 text-[12px] text-muted">
               <span className="h-1.5 w-1.5 rounded-full bg-green" />
               {aiMode ? "Powered by Claude" : "Auto-corrected"}
             </div>

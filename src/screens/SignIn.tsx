@@ -44,14 +44,14 @@ export default function SignIn() {
           </div>
           <div className="leading-[1.1]">
             <div className="font-display text-[17px] font-extrabold">Brainfy</div>
-            <div className="text-[10.5px] font-bold tracking-[.14em] text-[#8b887f]">LANGUAGES AI</div>
+            <div className="text-[10.5px] font-bold tracking-[.14em] text-muted">LANGUAGES AI</div>
           </div>
         </div>
 
         <h1 className="m-0 mb-1 font-display text-[26px] font-extrabold tracking-[-.025em]">
           {mode === "in" ? "Welcome back" : "Create your account"}
         </h1>
-        <p className="mb-6 text-[14px] text-[#8b887f]">
+        <p className="mb-6 text-[14px] text-muted">
           {mode === "in"
             ? "Sign in to pick up your streak where you left off."
             : "Your progress, streak and review schedule sync across devices."}
@@ -91,12 +91,12 @@ export default function SignIn() {
           />
 
           {error && (
-            <div className="rounded-[12px] border border-[#FADDD2] bg-[#FFF6F3] px-3.5 py-2.5 text-[13px] text-[#5c4238]">
+            <div role="alert" id="auth-error" className="rounded-[12px] border border-[#FADDD2] bg-[#FFF6F3] px-3.5 py-2.5 text-[13px] text-[#5c4238]">
               {error}
             </div>
           )}
           {notice && (
-            <div className="rounded-[12px] border border-[#B8E6D2] bg-[#E3F6EE] px-3.5 py-2.5 text-[13px] text-green">
+            <div role="status" className="rounded-[12px] border border-[#B8E6D2] bg-[#E3F6EE] px-3.5 py-2.5 text-[13px] text-green">
               {notice}
             </div>
           )}
@@ -116,7 +116,7 @@ export default function SignIn() {
             setError("");
             setNotice("");
           }}
-          className="mt-4 w-full text-[13.5px] text-[#8b887f] transition hover:text-ink"
+          className="mt-4 w-full text-[13.5px] text-muted transition hover:text-ink"
         >
           {mode === "in" ? (
             <>

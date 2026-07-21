@@ -34,15 +34,23 @@ export async function checkAi(): Promise<boolean> {
  * Stream a tutor reply. Calls onDelta with each text chunk as it arrives and
  * resolves with the full reply. Throws if the endpoint is unavailable.
  */
+export interface PersonaRef {
+  /** A key in the server's persona table, or "custom". Never prose. */
+  tutorId: string;
+  /** Only for tutorId === "custom": the four form fields, assembled server-side. */
+  custom?: { name?: string; focus?: string; personality?: string; accent?: string };
+  learner?: string;
+}
+
 export async function streamChat(
-  system: string,
+  persona: PersonaRef,
   messages: ChatMsg[],
   onDelta: (text: string) => void,
 ): Promise<string> {
   const r = await fetch("/api/chat", {
     method: "POST",
     headers: { "content-type": "application/json", ...(await authHeaders()) },
-    body: JSON.stringify({ system, messages }),
+    body: JSON.stringify({ ...persona, messages }),
   });
   if (r.status === 429) throw new Error("You've hit this hour's tutor limit — try again shortly.");
   if (!r.ok || !r.body) throw new Error(`chat failed (${r.status})`);
@@ -59,13 +67,5 @@ export async function streamChat(
   return full;
 }
 
-export const GRAMMAR_SYSTEM = `You are Kenji, a grammar coach for a Spanish-speaking English learner at CEFR B2.
-
-You will be given one English sentence the learner just built in an exercise.
-
-Explain, in 2-4 short sentences:
-- the grammar pattern the sentence demonstrates, named plainly (e.g. "present perfect", "article + noun agreement")
-- why it is built that way, in learner-friendly language
-- one common mistake a Spanish speaker makes with this pattern
-
-Be concrete and warm. Plain prose only — no headings, no bullet points, no markdown.`;
+/** Persona id for the Lesson screen's "Explain grammar" button. */
+export const GRAMMAR_COACH: PersonaRef = { tutorId: "grammar-coach" };

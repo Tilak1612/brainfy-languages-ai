@@ -5,6 +5,7 @@ import { authEnabled } from "./lib/supabase";
 import { useAuth } from "./lib/auth";
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
+import ErrorBoundary from "./components/ErrorBoundary";
 import SignIn from "./screens/SignIn";
 import Dashboard from "./screens/Dashboard";
 import Voice from "./screens/Voice";
@@ -29,7 +30,7 @@ export default function App() {
 
   if (authEnabled && !ready) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-cream text-[14px] text-[#8b887f]">
+      <div className="flex h-screen w-full items-center justify-center bg-cream text-[14px] text-muted">
         Loading your progress…
       </div>
     );
@@ -43,13 +44,17 @@ export default function App() {
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar onNavigate={navigate} />
         <main className="flex-1 overflow-y-auto px-[34px] pb-[60px] pt-[30px]">
-          {screen === "dashboard" && <Dashboard onNavigate={navigate} />}
-          {screen === "voice" && <Voice />}
-          {screen === "lesson" && <Lesson onNavigate={navigate} />}
-          {screen === "review" && <Review onNavigate={navigate} />}
-          {screen === "pron" && <Pronunciation />}
-          {screen === "progress" && <Progress />}
-          {screen === "tutors" && <Tutors onNavigate={navigate} />}
+          {/* Per-screen, not app-wide: a crash in one screen leaves the shell
+              and sidebar usable so the learner can navigate out of it. */}
+          <ErrorBoundary resetKey={screen}>
+            {screen === "dashboard" && <Dashboard onNavigate={navigate} />}
+            {screen === "voice" && <Voice />}
+            {screen === "lesson" && <Lesson onNavigate={navigate} />}
+            {screen === "review" && <Review onNavigate={navigate} />}
+            {screen === "pron" && <Pronunciation />}
+            {screen === "progress" && <Progress />}
+            {screen === "tutors" && <Tutors onNavigate={navigate} />}
+          </ErrorBoundary>
         </main>
       </div>
     </div>

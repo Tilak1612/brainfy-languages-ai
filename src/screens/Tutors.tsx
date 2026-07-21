@@ -37,7 +37,7 @@ export default function Tutors({ onNavigate }: { onNavigate: (s: Screen) => void
       <h1 className="m-0 mb-1 font-display text-[28px] font-extrabold tracking-[-.025em]">
         Choose your AI tutor
       </h1>
-      <div className="mb-6 text-[14px] text-[#8b887f]">
+      <div className="mb-6 text-[14px] text-muted">
         Each tutor has a distinct personality, teaching style and voice. Persistent memory means they
         remember every session.
       </div>
@@ -83,7 +83,7 @@ export default function Tutors({ onNavigate }: { onNavigate: (s: Screen) => void
                 <button
                   onClick={() => removeCustom(t.id)}
                   title={`Delete ${t.name}`}
-                  className="rounded-xl border border-[#E4E1DA] px-3 text-[13px] font-bold text-[#8b887f] transition hover:border-coral hover:text-coral-deep"
+                  className="rounded-xl border border-[#E4E1DA] px-3 text-[13px] font-bold text-muted transition hover:border-coral hover:text-coral-deep"
                 >
                   Delete
                 </button>
@@ -116,7 +116,7 @@ export default function Tutors({ onNavigate }: { onNavigate: (s: Screen) => void
               </button>
               <button
                 onClick={() => setBuilding(false)}
-                className="rounded-xl border border-[#E4E1DA] px-3 text-[13px] font-bold text-[#8b887f] transition hover:bg-[#f3f1ec]"
+                className="rounded-xl border border-[#E4E1DA] px-3 text-[13px] font-bold text-muted transition hover:bg-[#f3f1ec]"
               >
                 Cancel
               </button>
@@ -131,7 +131,7 @@ export default function Tutors({ onNavigate }: { onNavigate: (s: Screen) => void
               <PlusIcon size={26} className="text-brand" />
             </div>
             <div className="mb-[5px] font-display text-[17px] font-bold">Build a custom tutor</div>
-            <div className="text-[13px] leading-[1.5] text-[#8b887f]">
+            <div className="text-[13px] leading-[1.5] text-muted">
               Pick a personality, voice, accent and focus area.
             </div>
           </button>

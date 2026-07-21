@@ -15,7 +15,9 @@
   --color-brand-deep: #4536cf;
   --color-brand-tint: #eeebfd;
 
-  --color-muted: #8b887f;
+  /* Was #8b887f — 3.08:1 on cream, below the 4.5:1 AA floor for body text.
+     #6b6862 measures 4.83:1 on cream and 5.55:1 on white. */
+  --color-muted: #6b6862;
   --color-muted-dark: #6b6862;
   --color-line: #e7e4dd;
   --color-line-2: #e4e1da;
@@ -130,4 +132,45 @@ a:hover {
 }
 .anim-caret {
   animation: brf-pulse 1s steps(2) infinite;
+}
+
+/* ---- Accessibility ------------------------------------------------------ */
+
+/* Focus indicator. Several inputs set `outline-none` with only a 1px border
+   recolor as the focus cue, and buttons relied on the UA default ring — which
+   is nearly invisible on the dark sidebar and the dark call panel. */
+:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+.bg-sidebar :focus-visible,
+.bg-panel :focus-visible,
+[class*="141319"] :focus-visible {
+  outline-color: #ffffff;
+}
+
+/* WCAG 2.2.2: the call screen's ring, waveform and pulse animations auto-start
+   and run indefinitely with no pause control. Honour the OS preference. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Visually hidden but available to screen readers. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }

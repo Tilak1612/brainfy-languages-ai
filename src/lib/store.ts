@@ -20,7 +20,19 @@ export interface State {
   wordsLearned: number;
   achievements: string[];
   lessonsCompleted: number;
+  /** Completed AI tutor conversations. Backs the "100 conversations" badge. */
+  conversations: number;
+  /**
+   * Minutes practised per day, keyed YYYY-MM-DD. Without this there was no
+   * history at all: the Progress week chart was a fixed array, "+12% vs last
+   * week" was uncomputable, and the "perfect week" badge could never unlock.
+   * Trimmed to the last 60 days so it cannot grow without bound.
+   */
+  dailyMinutes: Record<string, number>;
 }
+
+/** Rolling window kept in dailyMinutes; enough for a week chart plus comparison. */
+const HISTORY_DAYS = 60;
 
 const KEY = "brainfy.state.v1";
 
@@ -53,7 +65,19 @@ function demoState(): State {
     wordsLearned: 862,
     achievements: ["streak21", "conv100", "words500", "perfectweek"],
     lessonsCompleted: 0,
+    conversations: 112,
+    dailyMinutes: demoWeek(),
   };
+}
+
+/** A plausible week for the design demo only. Real accounts start empty. */
+function demoWeek(): Record<string, number> {
+  const out: Record<string, number> = {};
+  const mins = [22, 31, 18, 40, 27, 12, 35];
+  for (let i = 6; i >= 0; i--) {
+    out[todayStr(Date.now() - i * 86400000)] = mins[6 - i];
+  }
+  return out;
 }
 
 /** What a real new account looks like: nothing earned yet. */
@@ -71,6 +95,8 @@ function emptyState(): State {
     wordsLearned: 0,
     achievements: [],
     lessonsCompleted: 0,
+    conversations: 0,
+    dailyMinutes: {},
   };
 }
 
@@ -151,7 +177,37 @@ const ACH_RULES: { id: string; label: string; test: (s: State) => boolean }[] = 
   { id: "streak21", label: "21-day streak", test: (s) => s.streak >= 21 },
   { id: "words500", label: "500 words", test: (s) => s.wordsLearned >= 500 },
   { id: "days365", label: "365 days", test: (s) => s.streak >= 365 },
+  // These three had tiles on the Progress screen but no rule, so they were
+  // permanently unwinnable — the counter could never read more than 3 of 6.
+  { id: "conv100", label: "100 conversations", test: (s) => s.conversations >= 100 },
+  { id: "perfectweek", label: "Perfect week", test: (s) => hitGoalEveryDay(s, 7) },
+  { id: "c1level", label: "C1 level", test: (s) => cefrLevel(s) === "C1" || cefrLevel(s) === "C2" },
 ];
+
+/** True when every one of the last `days` days met the daily goal. */
+function hitGoalEveryDay(s: State, days: number): boolean {
+  for (let i = 0; i < days; i++) {
+    const day = todayStr(Date.now() - i * 86400000);
+    if ((s.dailyMinutes[day] ?? 0) < s.dailyGoalMin) return false;
+  }
+  return true;
+}
+
+/**
+ * CEFR level derived from mean skill mastery. Previously the UI hardcoded "B2"
+ * for everyone, including brand-new accounts with zero mastery. This is a rough
+ * proxy, not a certified placement — the UI labels it accordingly.
+ */
+export function cefrLevel(s: State = state): "A1" | "A2" | "B1" | "B2" | "C1" | "C2" {
+  const vals = Object.values(s.skills);
+  const avg = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+  if (avg >= 95) return "C2";
+  if (avg >= 80) return "C1";
+  if (avg >= 60) return "B2";
+  if (avg >= 40) return "B1";
+  if (avg >= 20) return "A2";
+  return "A1";
+}
 
 function checkAchievements() {
   const unlocked = [...state.achievements];
@@ -179,7 +235,23 @@ export const actions = {
       streak = lastActiveDate === yesterday ? streak + 1 : lastActiveDate === null ? streak : 1;
       lastActiveDate = today;
     }
-    set({ streak, lastActiveDate, minutesToday: minutesToday + minutes, todayDate });
+    const nextMinutes = minutesToday + minutes;
+
+    // Record the day so the week chart and the "perfect week" badge have real
+    // history to read. Trimmed to a rolling window so it cannot grow forever.
+    const dailyMinutes = { ...state.dailyMinutes, [today]: nextMinutes };
+    const cutoff = todayStr(Date.now() - HISTORY_DAYS * 86400000);
+    for (const day of Object.keys(dailyMinutes)) {
+      if (day < cutoff) delete dailyMinutes[day];
+    }
+
+    set({ streak, lastActiveDate, minutesToday: nextMinutes, todayDate, dailyMinutes });
+    checkAchievements();
+  },
+
+  /** Count a finished AI tutor conversation. Backs the "100 conversations" badge. */
+  completeConversation() {
+    set({ conversations: state.conversations + 1 });
     checkAchievements();
   },
 
