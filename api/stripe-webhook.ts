@@ -34,19 +34,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
   const stripe = stripeClient();
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
-  const admin = adminClient();
-  if (!stripe || !secret || !admin) {
+  if (!stripe || !secret) {
     res.status(503).end("billing not configured");
     return;
   }
 
+  // Authenticate BEFORE any other check. An earlier version tested the database
+  // config first, so a forged payload was turned away by a missing env var
+  // rather than by its bad signature — the right outcome for the wrong reason,
+  // and one that would silently stop protecting anything once config was
+  // complete. Untrusted input is rejected on its own merits here.
   let event: Stripe.Event;
   try {
     const sig = req.headers["stripe-signature"] as string;
     event = stripe.webhooks.constructEvent(await rawBody(req), sig, secret);
-  } catch (e) {
-    // Unverified payload — never act on it.
+  } catch {
     res.status(400).end("invalid signature");
+    return;
+  }
+
+  // Signature is good, so this really is Stripe. If we cannot write, return 503
+  // so Stripe retries rather than dropping a genuine state change.
+  const admin = adminClient();
+  if (!admin) {
+    res.status(503).end("billing not configured");
     return;
   }
 
