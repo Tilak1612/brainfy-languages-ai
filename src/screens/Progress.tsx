@@ -61,7 +61,7 @@ export default function Progress() {
     : 0;
 
   const stats = [
-    { label: "Current streak", value: `${streak} days`, color: "#FF6B4A" },
+    { label: "Current streak", value: `${streak} ${streak === 1 ? "day" : "days"}`, color: "#FF6B4A" },
     { label: "Total XP", value: xp.toLocaleString(), color: "#C6890A" },
     { label: "Words learned", value: words.toLocaleString(), color: "#1FA971" },
     { label: "CEFR level", value: cefrLevel(), color: "#5B4BE8" },

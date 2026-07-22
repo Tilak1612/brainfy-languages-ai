@@ -4,7 +4,7 @@ import { cafeScript } from "../content/learning";
 import { actions } from "../lib/store";
 import { checkAi, streamChat, type ChatMsg } from "../lib/chat";
 import { checkVoice, Recorder, transcribe, speak, stopSpeaking } from "../lib/voice";
-import { useActiveTutor } from "../lib/tutors";
+import { useActiveTutor, greetingFor } from "../lib/tutors";
 import { useDisplayName } from "../lib/auth";
 
 interface Msg {
@@ -20,7 +20,7 @@ const DEFAULT_TIP =
 export default function Voice() {
   const tutor = useActiveTutor();
   const learner = useDisplayName();
-  const GREETING = `Hi ${learner}! ${tutor.name} here. What did you get up to today?`;
+  const GREETING = greetingFor(tutor, learner);
   // A persona REFERENCE. The prompt itself lives server-side — the client can
   // no longer supply one, which is what made this endpoint a free Claude proxy.
   const persona = tutor.custom

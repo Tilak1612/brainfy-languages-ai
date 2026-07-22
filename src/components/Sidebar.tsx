@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { Screen } from "../data";
-import { actions, useStore } from "../lib/store";
+import { actions, useStore, cefrLevel } from "../lib/store";
 import { authEnabled } from "../lib/supabase";
 import { useAuth, signOut } from "../lib/auth";
 import { useBilling, startCheckout, openPortal } from "../lib/billing";
@@ -43,6 +43,8 @@ export default function Sidebar({
   const [busy, setBusy] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { session } = useAuth();
+  // Same derivation the Progress screen uses — these used to disagree (B2 vs A1).
+  const level = cefrLevel(useStore((s) => s));
   const billing = useBilling();
 
   // Signed in: show who you actually are. Demo mode: the design's persona.
@@ -184,7 +186,7 @@ export default function Sidebar({
             </div>
             <div className="min-w-0 flex-1 leading-[1.15]">
               <div className="truncate text-[13px] font-bold">{displayName}</div>
-              <div className="text-[11.5px] text-[#8C8A96]">B2 · Learning EN</div>
+              <div className="text-[11.5px] text-[#8C8A96]">{level} · Spanish → English</div>
             </div>
             <ChevronDownIcon size={16} className="text-[#8C8A96]" />
           </button>

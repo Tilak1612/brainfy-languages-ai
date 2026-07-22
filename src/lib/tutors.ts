@@ -21,18 +21,40 @@ export interface Persona extends Tutor {
 // second source of truth that silently drifts, and historically the client copy
 // was the one actually sent — which let anyone replace it. The client now knows
 // only display metadata; the server maps id -> prompt.
+// Focus only. These used to append "· B2" — a level assertion that contradicted
+// the Progress screen's computed level. The learner's real level is shown there.
 const BADGES: Record<string, string> = {
-  Maya: "Free conversation · B2",
-  Kenji: "Grammar focus · B2",
-  "Léo": "Pronunciation · B2",
-  Amara: "Business & interview · B2",
+  Maya: "Free conversation",
+  Kenji: "Grammar focus",
+  "Léo": "Pronunciation",
+  Amara: "Business & interview",
 };
+
+// Opening line per tutor. Every tutor previously said the same sentence, so the
+// "distinct personality" promise was contradicted before the learner typed
+// anything. {{LEARNER}} is substituted at render.
+const GREETINGS: Record<string, string> = {
+  Maya: "Hi {{LEARNER}}! Good to see you. What did you get up to today?",
+  Kenji: "Hello {{LEARNER}}. Say anything you like — I'll tell you exactly why it works or doesn't. What shall we start with?",
+  "Léo": "Hey {{LEARNER}}! Let's get your mouth moving. Tell me about your day — out loud if you can.",
+  Amara: "Good to meet you, {{LEARNER}}. Let's practise sounding sharp at work. Walk me through what you do.",
+};
+
+/** The tutor's opening line, with the learner's name filled in. */
+export function greetingFor(p: Persona, learner: string): string {
+  const t =
+    GREETINGS[p.id] ??
+    (p.custom
+      ? `Hi {{LEARNER}}! I'm ${p.name}. Let's work on ${p.role.toLowerCase()} — where would you like to begin?`
+      : "Hi {{LEARNER}}! What would you like to practise today?");
+  return t.replaceAll("{{LEARNER}}", learner);
+}
 
 function toPersona(t: Tutor): Persona {
   return {
     ...t,
     id: t.name,
-    badge: BADGES[t.name] ?? "Conversation · B2",
+    badge: BADGES[t.name] ?? "Conversation",
   };
 }
 
@@ -53,7 +75,7 @@ export function buildCustom(opts: {
     role: opts.focus,
     grad: "linear-gradient(135deg,#8B7CF6,#5B4BE8)",
     blurb: `${opts.personality}. Focuses on ${opts.focus.toLowerCase()}.`,
-    badge: `${opts.focus} · B2`,
+    badge: opts.focus,
     custom: true,
     customFields: { name, focus: opts.focus, personality: opts.personality, accent: opts.accent },
   };

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { SearchIcon, FlameIcon, StarIcon, BellIcon } from "./icons";
 import { useStore, dueCount } from "../lib/store";
-import { search } from "../lib/search";
+import { buildIndex, search } from "../lib/search";
 import { useContent } from "../lib/content";
 import type { Screen } from "../data";
 
@@ -19,9 +19,11 @@ export default function Topbar({ onNavigate }: { onNavigate: (s: Screen) => void
   const searchRef = useRef<HTMLDivElement>(null);
   const bellRef = useRef<HTMLDivElement>(null);
 
-  const hits = useMemo(() => search(q), [q]);
-  // Same source of truth as the dashboard's "N words due" tile.
-  const { vocab } = useContent();
+  // Index the LIVE content, not the bundled arrays — otherwise only the
+  // original 5 lessons and 12 words are findable.
+  const { vocab, lessons } = useContent();
+  const index = useMemo(() => buildIndex(lessons, vocab), [lessons, vocab]);
+  const hits = useMemo(() => search(index, q), [index, q]);
   const due = useMemo(() => dueCount(vocab.map((v) => v.id)), [cards, vocab]);
 
   // Live, honest notifications — every line is derived from real state.
@@ -116,17 +118,15 @@ export default function Topbar({ onNavigate }: { onNavigate: (s: Screen) => void
         )}
       </div>
 
-      {/* Learning-language indicator. Static on purpose: the course content is
-          English-only, so a switcher here would promise languages that do not
-          exist yet. */}
-      <div
-        title="You're learning English"
-        className="hidden items-center gap-[7px] rounded-full border border-[#E4E1DA] bg-white py-1.5 pl-2 pr-3 sm:flex"
-      >
-        <div className="flex h-[22px] w-[22px] items-center justify-center rounded-full bg-brand-tint text-[10.5px] font-extrabold text-brand">
-          EN
-        </div>
-        <span className="text-[13px] font-semibold">English</span>
+      {/* Course indicator, deliberately NOT a control. It previously read just
+          "EN", which was ambiguous about direction and looked like a switcher.
+          Only one course exists; a dropdown would promise languages we do not
+          have. Styled flat so it does not invite a click. */}
+      <div className="hidden items-center gap-1.5 rounded-full bg-brand-tint px-3 py-1.5 sm:flex">
+        <span className="text-[12.5px] font-bold text-brand">ES → EN</span>
+        <span className="sr-only">
+          Your course: learning English from Spanish. Only this course is available right now.
+        </span>
       </div>
 
       <div className="flex items-center gap-1.5 rounded-full bg-[#FFEDE7] px-[13px] py-[7px] text-[13.5px] font-extrabold text-coral-deep">
