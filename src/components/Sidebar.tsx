@@ -66,7 +66,12 @@ export default function Sidebar({
   }, []);
 
   return (
-    <aside className="flex w-[264px] flex-none flex-col gap-1.5 bg-sidebar px-4 py-[22px] text-[#EDECF0]">
+    // Hidden below md — BottomNav takes over there. At 264px this consumed 70%
+    // of a 375px phone screen, leaving 111px for content.
+    <aside
+      aria-label="Main"
+      className="hidden w-[264px] flex-none flex-col gap-1.5 bg-sidebar px-4 py-[22px] text-[#EDECF0] md:flex"
+    >
       {/* Brand */}
       <div className="flex items-center gap-[11px] px-2 pb-[18px] pt-1">
         <div className="grad-brand-3 flex h-[34px] w-[34px] items-center justify-center rounded-[10px] shadow-[0_6px_18px_-6px_rgba(91,75,232,.7)]">

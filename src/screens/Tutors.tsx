@@ -42,7 +42,7 @@ export default function Tutors({ onNavigate }: { onNavigate: (s: Screen) => void
         remember every session.
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 md:gap-4">
         {personas.map((t) => (
           <div
             key={t.id}

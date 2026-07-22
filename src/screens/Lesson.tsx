@@ -131,7 +131,7 @@ export default function Lesson({ onNavigate }: { onNavigate: (s: Screen) => void
         <button
           onClick={() => onNavigate("dashboard")}
           aria-label="Back to dashboard"
-          className="flex h-10 w-10 items-center justify-center rounded-[11px] border border-[#E4E1DA] bg-white text-[#4b4842] transition hover:bg-[#e9e6df]"
+          className="flex h-11 w-11 items-center justify-center rounded-[11px] md:h-10 md:w-10 border border-[#E4E1DA] bg-white text-[#4b4842] transition hover:bg-[#e9e6df]"
         >
           <BackIcon size={18} />
         </button>
@@ -146,12 +146,12 @@ export default function Lesson({ onNavigate }: { onNavigate: (s: Screen) => void
         </div>
       </div>
 
-      <div className="rounded-[24px] border border-[#E7E4DD] bg-white px-9 py-[38px] shadow-[0_1px_2px_rgba(20,20,30,.04)]">
+      <div className="rounded-[24px] border border-[#E7E4DD] bg-white px-5 py-7 shadow-[0_1px_2px_rgba(20,20,30,.04)] md:px-9 md:py-[38px]">
         <h1 className="mb-[22px] inline-flex items-center gap-[7px] rounded-full bg-brand-tint px-3 py-1.5 text-[12px] font-extrabold tracking-[.03em] text-brand">
           SENTENCE BUILDER
         </h1>
         <div className="mb-2 text-[14px] font-semibold text-muted">{item.hint}</div>
-        <h2 className="m-0 mb-[30px] font-display text-[28px] font-bold tracking-[-.02em]">{item.prompt}</h2>
+        <h2 className="m-0 mb-6 font-display text-[22px] font-bold tracking-[-.02em] md:mb-[30px] md:text-[28px]">{item.prompt}</h2>
 
         {/* Answer slots */}
         <div

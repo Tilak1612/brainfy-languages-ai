@@ -71,7 +71,7 @@ export default function Progress() {
     <div className="anim-fade mx-auto max-w-[1180px]">
       <h1 className="m-0 mb-6 font-display text-[28px] font-extrabold tracking-[-.025em]">Your progress</h1>
 
-      <div className="mb-[18px] grid grid-cols-4 gap-3.5">
+      <div className="mb-[18px] grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-3.5">
         {stats.map((s) => (
           <div key={s.label} className="rounded-[18px] border border-[#E7E4DD] bg-white p-5">
             <div className="mb-2 text-[13px] font-semibold text-muted">{s.label}</div>
@@ -80,7 +80,7 @@ export default function Progress() {
         ))}
       </div>
 
-      <div className="mb-[18px] grid grid-cols-[1.3fr_1fr] gap-[18px]">
+      <div className="mb-[18px] grid grid-cols-1 gap-4 lg:grid-cols-[1.3fr_1fr] lg:gap-[18px]">
         <div className="rounded-[22px] border border-[#E7E4DD] bg-white p-6">
           <h2 className="mb-0.5 font-display text-[17px] font-bold">This week</h2>
           <div className="mb-[22px] text-[13px] text-muted">
@@ -141,7 +141,7 @@ export default function Progress() {
             {ACHS.filter((a) => unlocked.includes(a.id)).length} of {ACHS.length} unlocked
           </span>
         </div>
-        <div className="grid grid-cols-6 gap-3.5">
+        <div className="grid grid-cols-3 gap-3 md:grid-cols-6 md:gap-3.5">
           {ACHS.map((a) => {
             const has = unlocked.includes(a.id);
             return (

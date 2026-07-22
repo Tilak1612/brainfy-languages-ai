@@ -6,7 +6,7 @@ Sized against the stated goal of competing with Duolingo/Babbel/Speak.
 
 | # | Item | Effort | Why |
 |---|---|---|---|
-| P0-1 | **Mobile layout** | 1–2 wk | Zero breakpoints exist. 264px sidebar on a 375px screen; `grid-cols-4` cannot reflow. Consumer language learning is majority mobile — this is disqualifying. |
+| ~~P0-1~~ | ~~**Mobile layout**~~ | **DONE** | Bottom tab bar below `md`, sidebar hidden, all grids reflow, touch targets ≥44px. Verified at 375px and 768px: no horizontal scroll, zero overflowing elements on any screen. |
 | P0-2 | **Router + URLs** | 3–5 d | No back button, no deep links, no shareable pages, no per-screen analytics. Structural; everything else builds on it. |
 | P0-3 | **Content to ≥10 hours** | 4–8 wk | 20 minutes today. A subscriber exhausts it before the trial ends. Pipeline exists (`scripts/generate-content.mjs`); this is authoring + review time. |
 | P0-4 | **Onboarding + placement** | 1 wk | New users land on a dashboard with no explanation and a level they never set. |

@@ -36,21 +36,21 @@ export default function Dashboard({ onNavigate }: { onNavigate: (s: Screen) => v
 
   return (
     <div className="anim-fade mx-auto max-w-[1180px]">
-      <div className="mb-[26px] flex items-end justify-between gap-5">
+      <div className="mb-6 flex flex-col items-start gap-4 md:mb-[26px] md:flex-row md:items-end md:justify-between md:gap-5">
         <div>
           <div className="mb-[5px] text-[13.5px] font-bold tracking-[.02em] text-muted">{greeting}, {learner}</div>
-          <h1 className="m-0 font-display text-[32px] font-extrabold leading-[1.05] tracking-[-.025em]">Let's keep your streak alive.</h1>
+          <h1 className="m-0 font-display text-[26px] font-extrabold leading-[1.05] tracking-[-.025em] md:text-[32px]">Let's keep your streak alive.</h1>
         </div>
         <button
           onClick={() => onNavigate("voice")}
-          className="grad-brand flex items-center gap-[9px] rounded-[13px] px-5 py-[13px] text-[14.5px] font-bold text-white shadow-[0_10px_26px_-10px_rgba(91,75,232,.75)] transition hover:-translate-y-px hover:brightness-[1.07]"
+          className="grad-brand flex w-full items-center justify-center gap-[9px] rounded-[13px] px-5 py-[13px] text-[14.5px] font-bold text-white shadow-[0_10px_26px_-10px_rgba(91,75,232,.75)] transition hover:-translate-y-px hover:brightness-[1.07] md:w-auto"
         >
           <MicIcon size={18} className="text-white" />
           Start a conversation
         </button>
       </div>
 
-      <div className="mb-[18px] grid grid-cols-[1.6fr_1fr] gap-[18px]">
+      <div className="mb-[18px] grid grid-cols-1 gap-4 lg:grid-cols-[1.6fr_1fr] lg:gap-[18px]">
         <div className="relative overflow-hidden rounded-[22px] bg-[linear-gradient(135deg,#211f2b,#17161C)] p-[26px] text-white">
           <div className="absolute -right-10 -top-10 h-[200px] w-[200px] rounded-full bg-[radial-gradient(circle,rgba(124,108,246,.5),transparent_70%)]" />
           <div className="relative">
@@ -109,7 +109,7 @@ export default function Dashboard({ onNavigate }: { onNavigate: (s: Screen) => v
         </div>
       </div>
 
-      <div className="mb-[26px] grid grid-cols-4 gap-3.5">
+      <div className="mb-[26px] grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-3.5">
         {quickActions.map((a) => (
           <button key={a.title} onClick={() => onNavigate(a.key)} className={`cursor-pointer rounded-[18px] border border-[#E7E4DD] bg-white p-[18px] text-left ${cardHover}`}>
             <div className="mb-3 flex h-[38px] w-[38px] items-center justify-center rounded-[11px]" style={{ background: a.bg }}>
@@ -125,7 +125,7 @@ export default function Dashboard({ onNavigate }: { onNavigate: (s: Screen) => v
         <h3 className="m-0 font-display text-[19px] font-bold tracking-[-.02em]">Your AI tutors</h3>
         <button onClick={() => onNavigate("tutors")} className="cursor-pointer text-[13.5px] font-bold text-brand">Browse all →</button>
       </div>
-      <div className="mb-[26px] grid grid-cols-4 gap-3.5">
+      <div className="mb-[26px] grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-3.5">
         {tutors.map((t) => (
           <button
             key={t.name}
@@ -152,7 +152,7 @@ export default function Dashboard({ onNavigate }: { onNavigate: (s: Screen) => v
       </div>
 
       <h3 className="m-0 mb-3.5 font-display text-[19px] font-bold tracking-[-.02em]">Recommended for you</h3>
-      <div className="grid grid-cols-3 gap-3.5">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 md:gap-3.5">
         {recommended.map((r) => (
           <button key={r.title} onClick={() => onNavigate("lesson")} className={`cursor-pointer overflow-hidden rounded-[18px] border border-[#E7E4DD] bg-white text-left ${cardHover}`}>
             <div className="flex h-24 items-end p-3" style={{ background: r.grad }}>

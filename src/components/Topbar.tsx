@@ -69,7 +69,7 @@ export default function Topbar({ onNavigate }: { onNavigate: (s: Screen) => void
   }
 
   return (
-    <header className="relative z-[5] flex h-[66px] flex-none items-center gap-4 border-b border-[#E4E1DA] bg-cream/[.82] px-7 backdrop-blur-[10px]">
+    <header className="relative z-[5] flex h-[60px] flex-none items-center gap-2 border-b border-[#E4E1DA] bg-cream/[.82] px-4 backdrop-blur-[10px] md:h-[66px] md:gap-4 md:px-7">
       <div ref={searchRef} className="relative mr-auto min-w-[150px] max-w-[420px] flex-1">
         <div className="flex items-center gap-2.5 rounded-[11px] border border-[#E4E1DA] bg-white px-[13px] py-[9px] text-muted focus-within:border-brand">
           <SearchIcon size={16} className="flex-none" />
@@ -121,7 +121,7 @@ export default function Topbar({ onNavigate }: { onNavigate: (s: Screen) => void
           exist yet. */}
       <div
         title="You're learning English"
-        className="flex items-center gap-[7px] rounded-full border border-[#E4E1DA] bg-white py-1.5 pl-2 pr-3"
+        className="hidden items-center gap-[7px] rounded-full border border-[#E4E1DA] bg-white py-1.5 pl-2 pr-3 sm:flex"
       >
         <div className="flex h-[22px] w-[22px] items-center justify-center rounded-full bg-brand-tint text-[10.5px] font-extrabold text-brand">
           EN
@@ -144,7 +144,7 @@ export default function Topbar({ onNavigate }: { onNavigate: (s: Screen) => void
           onClick={() => setBellOpen((b) => !b)}
           aria-label={due > 0 ? `Notifications, ${due} words due` : "Notifications"}
           aria-expanded={bellOpen}
-          className="relative flex h-10 w-10 items-center justify-center rounded-[11px] border border-[#E4E1DA] bg-white text-[#4b4842] transition hover:bg-[#f3f1ec]"
+          className="relative flex h-11 w-11 items-center justify-center rounded-[11px] md:h-10 md:w-10 border border-[#E4E1DA] bg-white text-[#4b4842] transition hover:bg-[#f3f1ec]"
         >
           <BellIcon size={18} />
           {due > 0 && <span className="absolute right-[7px] top-[7px] h-2 w-2 rounded-full bg-coral ring-2 ring-white" />}

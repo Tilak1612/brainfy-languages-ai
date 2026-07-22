@@ -215,9 +215,9 @@ export default function Voice() {
       : `Live · ${clock}`;
 
   return (
-    <div className="anim-fade mx-auto grid max-w-[1180px] grid-cols-[1.15fr_.85fr] gap-5">
+    <div className="anim-fade mx-auto grid max-w-[1180px] grid-cols-1 gap-4 lg:grid-cols-[1.15fr_.85fr] lg:gap-5">
       {/* Live call panel */}
-      <div className="relative flex min-h-[560px] flex-col items-center overflow-hidden rounded-[24px] bg-[linear-gradient(160deg,#211f2b,#141319)] p-[30px] text-white">
+      <div className="relative flex min-h-[420px] flex-col items-center overflow-hidden rounded-[24px] bg-[linear-gradient(160deg,#211f2b,#141319)] p-5 text-white md:min-h-[560px] md:p-[30px]">
         <div className="flex w-full items-center justify-between">
           <div className="flex items-center gap-[11px]">
             <div

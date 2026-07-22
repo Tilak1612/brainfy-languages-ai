@@ -6,6 +6,7 @@ import { useAuth } from "./lib/auth";
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
 import ErrorBoundary from "./components/ErrorBoundary";
+import BottomNav from "./components/BottomNav";
 import SignIn from "./screens/SignIn";
 import Dashboard from "./screens/Dashboard";
 import Voice from "./screens/Voice";
@@ -43,7 +44,9 @@ export default function App() {
       <Sidebar screen={screen} onNavigate={navigate} />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar onNavigate={navigate} />
-        <main className="flex-1 overflow-y-auto px-[34px] pb-[60px] pt-[30px]">
+        {/* pb-24 on mobile clears the fixed bottom nav; the old flat pb-[60px]
+            left the last card under it. */}
+        <main className="flex-1 overflow-y-auto px-4 pb-24 pt-5 sm:px-6 md:px-[34px] md:pb-[60px] md:pt-[30px]">
           {/* Per-screen, not app-wide: a crash in one screen leaves the shell
               and sidebar usable so the learner can navigate out of it. */}
           <ErrorBoundary resetKey={screen}>
@@ -57,6 +60,7 @@ export default function App() {
           </ErrorBoundary>
         </main>
       </div>
+      <BottomNav screen={screen} onNavigate={navigate} />
     </div>
   );
 }

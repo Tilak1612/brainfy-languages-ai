@@ -66,7 +66,7 @@ export default function Review({ onNavigate }: { onNavigate: (s: Screen) => void
         <button
           onClick={() => onNavigate("dashboard")}
           aria-label="Back to dashboard"
-          className="flex h-10 w-10 items-center justify-center rounded-[11px] border border-[#E4E1DA] bg-white text-[#4b4842] transition hover:bg-[#e9e6df]"
+          className="flex h-11 w-11 items-center justify-center rounded-[11px] md:h-10 md:w-10 border border-[#E4E1DA] bg-white text-[#4b4842] transition hover:bg-[#e9e6df]"
         >
           <BackIcon size={18} />
         </button>
@@ -81,13 +81,13 @@ export default function Review({ onNavigate }: { onNavigate: (s: Screen) => void
         </div>
       </div>
 
-      <div className="flex min-h-[300px] flex-col items-center justify-center rounded-[24px] border border-[#E7E4DD] bg-white px-9 py-12 text-center shadow-[0_1px_2px_rgba(20,20,30,.04)]">
+      <div className="flex min-h-[260px] flex-col items-center justify-center rounded-[24px] border border-[#E7E4DD] bg-white px-5 py-10 text-center shadow-[0_1px_2px_rgba(20,20,30,.04)] md:min-h-[300px] md:px-9 md:py-12">
         {isNew && (
           <span className="mb-4 rounded-full bg-brand-tint px-3 py-1 text-[11px] font-extrabold tracking-[.04em] text-brand">
             NEW WORD
           </span>
         )}
-        <h1 className="m-0 font-display text-[40px] font-extrabold tracking-[-.02em]">{card.term}</h1>
+        <h1 className="m-0 font-display text-[32px] font-extrabold tracking-[-.02em] md:text-[40px]">{card.term}</h1>
         {revealed ? (
           <>
             <div className="mt-2 font-mono text-[15px] text-muted">{card.ipa}</div>
@@ -104,7 +104,7 @@ export default function Review({ onNavigate }: { onNavigate: (s: Screen) => void
       </div>
 
       {revealed && (
-        <div className="anim-fade mt-4 grid grid-cols-4 gap-3">
+        <div className="anim-fade mt-4 grid grid-cols-2 gap-2.5 md:grid-cols-4 md:gap-3">
           {GRADES.map(({ g, label, cls }) => (
             <button
               key={g}
