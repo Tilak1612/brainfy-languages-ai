@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Screen } from "./data";
-import { actions } from "./lib/store";
+import { actions, useStore } from "./lib/store";
 import { authEnabled } from "./lib/supabase";
 import { useAuth } from "./lib/auth";
 import Sidebar from "./components/Sidebar";
@@ -8,6 +8,7 @@ import Topbar from "./components/Topbar";
 import ErrorBoundary from "./components/ErrorBoundary";
 import BottomNav from "./components/BottomNav";
 import SignIn from "./screens/SignIn";
+import Welcome from "./screens/Welcome";
 import Dashboard from "./screens/Dashboard";
 import Voice from "./screens/Voice";
 import Lesson from "./screens/Lesson";
@@ -20,6 +21,7 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>("dashboard");
   const navigate = (s: Screen) => setScreen(s);
   const { session, ready } = useAuth();
+  const onboarded = useStore((s) => s.onboarded);
   const signedIn = !authEnabled || Boolean(session);
 
   // Register a learning session for today (advances streak once/day). Waits for
@@ -38,6 +40,15 @@ export default function App() {
   }
 
   if (!signedIn) return <SignIn />;
+
+  // First run: orient the learner before dropping them on a dashboard of zeros.
+  if (!onboarded) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center overflow-y-auto bg-cream px-5 py-10">
+        <Welcome onDone={navigate} />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-cream">

@@ -29,6 +29,8 @@ export interface State {
    * Trimmed to the last 60 days so it cannot grow without bound.
    */
   dailyMinutes: Record<string, number>;
+  /** False until the first-run screen is dismissed. */
+  onboarded: boolean;
 }
 
 /** Rolling window kept in dailyMinutes; enough for a week chart plus comparison. */
@@ -67,6 +69,7 @@ function demoState(): State {
     lessonsCompleted: 0,
     conversations: 112,
     dailyMinutes: demoWeek(),
+    onboarded: true,
   };
 }
 
@@ -97,6 +100,7 @@ function emptyState(): State {
     lessonsCompleted: 0,
     conversations: 0,
     dailyMinutes: {},
+    onboarded: false,
   };
 }
 
@@ -247,6 +251,15 @@ export const actions = {
 
     set({ streak, lastActiveDate, minutesToday: nextMinutes, todayDate, dailyMinutes });
     checkAchievements();
+  },
+
+  /** Set the learner's daily goal (minutes). Never 0 — it is a denominator. */
+  setDailyGoal(min: number) {
+    set({ dailyGoalMin: Math.max(5, Math.min(240, Math.round(min))) });
+  },
+
+  completeOnboarding() {
+    set({ onboarded: true });
   },
 
   /** Count a finished AI tutor conversation. Backs the "100 conversations" badge. */

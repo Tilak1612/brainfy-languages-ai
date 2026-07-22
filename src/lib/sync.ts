@@ -31,6 +31,7 @@ interface ProgressRow {
   lessons_completed?: number | null;
   conversations?: number | null;
   daily_minutes?: Record<string, number> | null;
+  onboarded?: boolean | null;
 }
 
 interface CardRow {
@@ -58,6 +59,7 @@ function toProgressRow(s: State, userId: string) {
     lessons_completed: s.lessonsCompleted,
     conversations: s.conversations,
     daily_minutes: s.dailyMinutes,
+    onboarded: s.onboarded,
     updated_at: new Date().toISOString(),
   };
 }
@@ -119,6 +121,7 @@ export async function pull(userId: string): Promise<void> {
     conversations: num(p.conversations, 0),
     dailyMinutes:
       p.daily_minutes && typeof p.daily_minutes === "object" ? p.daily_minutes : {},
+    onboarded: p.onboarded === true,
     cards,
   });
 }
