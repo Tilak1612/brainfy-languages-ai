@@ -44,7 +44,16 @@ function validate(draft) {
     if (!Array.isArray(l.bank)) errs.push(`${at}: bank must be an array`);
 
     if (Array.isArray(l.answer) && Array.isArray(l.bank)) {
-      const missing = l.answer.filter((t) => !l.bank.includes(t));
+      // MULTISET check, not set. A repeated answer token ("...check it before
+      // sending it") needs to appear twice in the bank or the exercise is
+      // literally unsolvable — set-containment misses this entirely.
+      const pool = [...l.bank];
+      const missing = [];
+      for (const t of l.answer) {
+        const i = pool.indexOf(t);
+        if (i === -1) missing.push(t);
+        else pool.splice(i, 1);
+      }
       if (missing.length) errs.push(`${at}: answer tokens missing from bank: ${missing.join(", ")}`);
       if (l.bank.length <= l.answer.length) errs.push(`${at}: bank has no distractors`);
       // A distractor that merely repeats an answer token adds no difficulty.
