@@ -60,6 +60,7 @@ export const tutors: Tutor[] = [
     role: "Conversation",
     grad: "linear-gradient(135deg,#8B7CF6,#5B4BE8)",
     blurb: "Warm & patient. Great for everyday chats and building confidence.",
+    face: "/tutors/maya.webp",
   },
   {
     initials: "K",
@@ -67,6 +68,7 @@ export const tutors: Tutor[] = [
     role: "Grammar coach",
     grad: "linear-gradient(135deg,#34C3A0,#1FA971)",
     blurb: "Precise and structured. Explains the why behind every correction.",
+    face: "/tutors/kenji.webp",
   },
   {
     initials: "L",
@@ -74,6 +76,7 @@ export const tutors: Tutor[] = [
     role: "Pronunciation",
     grad: "linear-gradient(135deg,#FF9E6B,#FF6B4A)",
     blurb: "Sharp ear for accent. Drills sounds until they feel natural.",
+    face: "/tutors/leo.webp",
   },
   {
     initials: "A",
@@ -81,6 +84,7 @@ export const tutors: Tutor[] = [
     role: "Business & interview",
     grad: "linear-gradient(135deg,#5AA9FF,#3B6FE0)",
     blurb: "Polished and professional. Preps you for meetings and interviews.",
+    face: "/tutors/amara.webp",
   },
 ];
 
