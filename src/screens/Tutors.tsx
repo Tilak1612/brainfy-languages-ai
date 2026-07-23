@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Screen } from "../data";
 import { PlusIcon } from "../components/icons";
+import TutorAvatar from "../components/TutorAvatar";
 import { allPersonas, buildCustom, addCustom, removeCustom, setActive, useTutors, type Persona } from "../lib/tutors";
 
 const FOCUS = ["Conversation", "Grammar", "Pronunciation", "Business & interview", "Travel"];
@@ -51,12 +52,7 @@ export default function Tutors({ onNavigate }: { onNavigate: (s: Screen) => void
             }`}
           >
             <div className="mb-4 flex items-center gap-3.5">
-              <div
-                className="flex h-[58px] w-[58px] items-center justify-center rounded-[17px] font-display text-[22px] font-extrabold text-white"
-                style={{ background: t.grad }}
-              >
-                {t.initials}
-              </div>
+              <TutorAvatar tutor={t} size={58} radius={17} />
               <div className="min-w-0 leading-[1.25]">
                 <div className="flex items-center gap-2">
                   <div className="truncate font-display text-[18px] font-bold">{t.name}</div>

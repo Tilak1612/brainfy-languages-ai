@@ -13,6 +13,13 @@ export interface Tutor {
   role: string;
   grad: string;
   blurb: string;
+  /**
+   * Path to a portrait image (e.g. "/tutors/maya.webp" in public/). Optional:
+   * when absent or the image fails to load, TutorAvatar shows the gradient
+   * monogram. Drop four files in and set these four fields to switch the whole
+   * app to real faces — no other change needed.
+   */
+  face?: string;
 }
 
 export interface Recommended {

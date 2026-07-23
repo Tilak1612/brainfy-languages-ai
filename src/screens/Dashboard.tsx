@@ -1,6 +1,7 @@
 import type { Screen } from "../data";
 import { tutors, recommended } from "../data";
 import { MicIcon, WaveIcon, LessonPairIcon, CalendarIcon } from "../components/icons";
+import TutorAvatar from "../components/TutorAvatar";
 import { useStore, dueCount } from "../lib/store";
 import { setActive, useActiveTutor } from "../lib/tutors";
 import { useDisplayName } from "../lib/auth";
@@ -138,9 +139,7 @@ export default function Dashboard({ onNavigate }: { onNavigate: (s: Screen) => v
             className={`cursor-pointer rounded-[18px] border border-[#E7E4DD] bg-white p-[18px] text-left ${cardHover}`}
           >
             <div className="mb-3 flex items-center gap-3">
-              <div className="flex h-[46px] w-[46px] items-center justify-center rounded-[14px] font-display text-[17px] font-extrabold text-white" style={{ background: t.grad }}>
-                {t.initials}
-              </div>
+              <TutorAvatar tutor={t} size={46} radius={14} />
               <div className="leading-[1.2]">
                 <div className="text-[15px] font-bold">{t.name}</div>
                 <div className="text-[12px] text-muted">{t.role}</div>
