@@ -86,6 +86,15 @@ export const tutors: Tutor[] = [
     blurb: "Polished and professional. Preps you for meetings and interviews.",
     face: "/tutors/amara.webp",
   },
+  {
+    initials: "S",
+    name: "Sofia",
+    role: "Travel & culture",
+    // Rose — a unique accent so she doesn't clash with Maya's purple.
+    grad: "linear-gradient(135deg,#F77FB4,#E24A93)",
+    blurb: "Friendly and practical. Gets you ready for real trips and everyday situations.",
+    face: "/tutors/sofia.webp",
+  },
 ];
 
 export const recommended: Recommended[] = [

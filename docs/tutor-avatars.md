@@ -7,9 +7,10 @@ than prompting each one from scratch — that is what keeps the set cohesive
 
 ## Current roster
 
-There are **four** tutors. (There is no "Sofia" tutor — that was an old
-placeholder *learner* name, since renamed to "Demo". Reviewers keep mistaking it
-for a fifth tutor; it isn't one.)
+There are **five** tutors. (The demo *learner* is named "Demo" — not a tutor.
+Sofia was originally only that placeholder learner name, which is why earlier
+reviews mistook it for a tutor; she is now a real, distinct tutor with her own
+specialty and accent colour.)
 
 | File | Tutor | Role | Accent | Visual cue |
 |------|-------|------|--------|-----------|
@@ -17,6 +18,7 @@ for a fifth tutor; it isn't one.)
 | `kenji.webp` | Kenji | Grammar coach | green `#1FA971` | calm, composed, precise, teal jacket |
 | `leo.webp`   | Léo   | Pronunciation | orange `#FF6B4A` | energetic, expressive, open collar |
 | `amara.webp` | Amara | Business & interview | blue `#3B6FE0` | confident, executive presence, scarf |
+| `sofia.webp` | Sofia | Travel & culture | rose `#E24A93` | friendly, approachable, purple layer |
 
 A viewer should be able to guess the role from the face before reading the text.
 
@@ -47,6 +49,8 @@ Keep everything above fixed; change only wardrobe accent and expression.
   smile. Lighter, more casual (open collar, white shirt).
 - **Amara — Business & interview.** Executive presence; confident, polished,
   composed. Structured blazer, professional accessory.
+- **Sofia — Travel & culture.** Friendly and approachable; relaxed, open smile.
+  Casual-smart, warm styling. Rose accent, distinct from Maya's purple.
 
 ## Subtle AI signature
 
@@ -91,3 +95,8 @@ renders it on the Tutors grid (78 px), Dashboard card (56 px) and Voice header
 (46 px), scales on card hover, and falls back to the gradient monogram if a file
 is ever missing. To replace a portrait: drop a new `public/tutors/<name>.webp`
 through the pipeline above — no code change.
+
+Adding a new tutor takes four edits: a row in `tutors` (`src/data.ts`) with a
+unique `grad` and `face`, a `BADGES` + `GREETINGS` entry in `src/lib/tutors.ts`,
+and a **server-side persona** in `api/_personas.ts` (the client never sends the
+prompt — without a persona entry the AI has no instructions for that tutor).

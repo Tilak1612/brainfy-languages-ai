@@ -28,6 +28,7 @@ const BADGES: Record<string, string> = {
   Kenji: "Grammar focus",
   "Léo": "Pronunciation",
   Amara: "Business & interview",
+  Sofia: "Travel & culture",
 };
 
 // Opening line per tutor. Every tutor previously said the same sentence, so the
@@ -38,6 +39,7 @@ const GREETINGS: Record<string, string> = {
   Kenji: "Hello {{LEARNER}}. Say anything you like — I'll tell you exactly why it works or doesn't. What shall we start with?",
   "Léo": "Hey {{LEARNER}}! Let's get your mouth moving. Tell me about your day — out loud if you can.",
   Amara: "Good to meet you, {{LEARNER}}. Let's practise sounding sharp at work. Walk me through what you do.",
+  Sofia: "¡Hola {{LEARNER}}! Where are we travelling today? Tell me about a trip you'd love to take.",
 };
 
 /** The tutor's opening line, with the learner's name filled in. */
