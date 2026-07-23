@@ -113,6 +113,20 @@ const listeners = new Set<() => void>();
 const changeHooks = new Set<() => void>();
 
 function load(): State {
+  // In Supabase mode Postgres is the single source of truth and persist() is a
+  // no-op, so localStorage is never written. It must not be READ either: a
+  // stale `brainfy.state.v1` left over from a demo-mode visit (xp 2480, streak
+  // 24, 862 words…) would otherwise seed the first render with fabricated
+  // progress until hydrate() arrives — the "localStorage and the UI disagree"
+  // desync. Clear the vestigial key and start empty; the server fills it in.
+  if (!localOnly) {
+    try {
+      localStorage.removeItem(KEY);
+    } catch {
+      /* ignore */
+    }
+    return defaultState();
+  }
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) return { ...defaultState(), ...JSON.parse(raw) };
