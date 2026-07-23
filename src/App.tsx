@@ -1,8 +1,15 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { Screen } from "./data";
 import { actions, useStore } from "./lib/store";
 import { authEnabled } from "./lib/supabase";
 import { useAuth } from "./lib/auth";
+import {
+  applyMeta,
+  NOT_FOUND_META,
+  pathForScreen,
+  SCREEN_META,
+  screenFromPath,
+} from "./lib/routes";
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -16,10 +23,33 @@ import Review from "./screens/Review";
 import Pronunciation from "./screens/Pronunciation";
 import Progress from "./screens/Progress";
 import Tutors from "./screens/Tutors";
+import NotFound from "./screens/NotFound";
 
 export default function App() {
-  const [screen, setScreen] = useState<Screen>("dashboard");
-  const navigate = (s: Screen) => setScreen(s);
+  // null means "the URL matches no screen" — render the 404 rather than
+  // silently showing the dashboard, which would be a soft 404 that tells the
+  // learner nothing and tells crawlers the wrong thing.
+  const [screen, setScreen] = useState<Screen | null>(() =>
+    screenFromPath(window.location.pathname),
+  );
+
+  const navigate = useCallback((s: Screen) => {
+    setScreen(s);
+    const path = pathForScreen(s);
+    if (window.location.pathname !== path) window.history.pushState({}, "", path);
+  }, []);
+
+  // Back/forward buttons. Without this the URL changed but the view did not.
+  useEffect(() => {
+    const onPop = () => setScreen(screenFromPath(window.location.pathname));
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
+  useEffect(() => {
+    applyMeta(screen ? SCREEN_META[screen] : NOT_FOUND_META);
+  }, [screen]);
+
   const { session, ready } = useAuth();
   const onboarded = useStore((s) => s.onboarded);
   const signedIn = !authEnabled || Boolean(session);
@@ -60,7 +90,8 @@ export default function App() {
         <main className="flex-1 overflow-y-auto px-4 pb-24 pt-5 sm:px-6 md:px-[34px] md:pb-[60px] md:pt-[30px]">
           {/* Per-screen, not app-wide: a crash in one screen leaves the shell
               and sidebar usable so the learner can navigate out of it. */}
-          <ErrorBoundary resetKey={screen}>
+          <ErrorBoundary resetKey={screen ?? "404"}>
+            {screen === null && <NotFound onNavigate={navigate} />}
             {screen === "dashboard" && <Dashboard onNavigate={navigate} />}
             {screen === "voice" && <Voice />}
             {screen === "lesson" && <Lesson onNavigate={navigate} />}

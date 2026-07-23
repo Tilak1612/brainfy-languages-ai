@@ -27,7 +27,8 @@ export default function BottomNav({
   screen,
   onNavigate,
 }: {
-  screen: Screen;
+  // null on the 404 route: nothing should look active.
+  screen: Screen | null;
   onNavigate: (s: Screen) => void;
 }) {
   return (

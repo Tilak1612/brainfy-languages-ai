@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://brainfy-languages-ai.vercel.app/sitemap.xml

@@ -169,7 +169,14 @@ export default function Lesson({ onNavigate }: { onNavigate: (s: Screen) => void
               {p.split("#")[0]}
             </button>
           ))}
-          {picked.length === 0 && <span className="text-[14px] text-[#b8b4ab]">Tap words to build the sentence…</span>}
+          {/* The old hint was #b8b4ab on cream — under 3:1, so it read as
+              decoration rather than instruction. An external reviewer sat on
+              this screen and concluded the lesson was disabled. */}
+          {picked.length === 0 && (
+            <span className="text-[14px] font-semibold text-muted">
+              Tap the words below to build your answer
+            </span>
+          )}
         </div>
 
         {/* Word bank */}
@@ -183,7 +190,9 @@ export default function Lesson({ onNavigate }: { onNavigate: (s: Screen) => void
               <button
                 key={w + i}
                 onClick={() => pick(w, i)}
-                className="rounded-xl border-[1.5px] border-[#E4E1DA] bg-white px-[17px] py-[11px] text-[15.5px] font-bold text-ink transition hover:border-brand hover:text-brand-deep"
+                // Shadow + press animation so the chips read as physical
+                // buttons. Flat white on cream looked like static text.
+                className="cursor-pointer rounded-xl border-[1.5px] border-[#E4E1DA] bg-white px-[17px] py-[11px] text-[15.5px] font-bold text-ink shadow-[0_1.5px_0_#E4E1DA] transition hover:-translate-y-px hover:border-brand hover:text-brand-deep hover:shadow-[0_2.5px_0_#cfc9f5] active:translate-y-0 active:shadow-none"
               >
                 {w}
               </button>
@@ -222,7 +231,10 @@ export default function Lesson({ onNavigate }: { onNavigate: (s: Screen) => void
             <button
               onClick={check}
               disabled={picked.length === 0}
-              className="grad-brand rounded-[13px] px-[30px] py-[13px] text-[15px] font-bold text-white shadow-[0_10px_26px_-10px_rgba(91,75,232,.7)] transition hover:brightness-[1.07] disabled:cursor-not-allowed disabled:opacity-40"
+              // opacity-40 read as "this button is broken". 60 plus a reason on
+              // hover reads as "not yet" — the state it actually means.
+              title={picked.length === 0 ? "Pick at least one word first" : "Check your answer"}
+              className="grad-brand rounded-[13px] px-[30px] py-[13px] text-[15px] font-bold text-white shadow-[0_10px_26px_-10px_rgba(91,75,232,.7)] transition hover:brightness-[1.07] disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none"
             >
               Check
             </button>

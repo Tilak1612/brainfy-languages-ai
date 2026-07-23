@@ -28,3 +28,4 @@ dist-ssr
 .agents/
 .env*.local
 content-drafts/
+.gstack/

@@ -34,7 +34,8 @@ export default function Sidebar({
   screen,
   onNavigate,
 }: {
-  screen: Screen;
+  // null on the 404 route: nothing should look active.
+  screen: Screen | null;
   onNavigate: (s: Screen) => void;
 }) {
   const xp = useStore((s) => s.xp);
