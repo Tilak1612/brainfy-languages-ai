@@ -109,7 +109,7 @@ export const transcript: TranscriptLine[] = [
   {
     align: "flex-start",
     bubble: { background: "#F1EFEA", color: "#2b2926" },
-    text: "Hi Sofia! Ready to practice ordering at a café? Let's start — how would you ask for a table for two?",
+    text: "Hi Demo! Ready to practice ordering at a café? Let's start — how would you ask for a table for two?",
   },
   {
     align: "flex-end",

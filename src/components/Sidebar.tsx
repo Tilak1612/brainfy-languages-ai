@@ -48,11 +48,13 @@ export default function Sidebar({
   const level = cefrLevel(useStore((s) => s));
   const billing = useBilling();
 
-  // Signed in: show who you actually are. Demo mode: the design's persona.
+  // Signed in: show who you actually are. Demo/preview mode (no backend): an
+  // obvious placeholder, not a plausible real name that reviewers mistake for
+  // a live account.
   const meta = session?.user?.user_metadata as { display_name?: string } | undefined;
   const displayName = authEnabled
     ? meta?.display_name || session?.user?.email?.split("@")[0] || "Learner"
-    : "Sofia Alvarez";
+    : "Demo Learner";
   const initials = displayName
     .split(/[\s._-]+/)
     .filter(Boolean)

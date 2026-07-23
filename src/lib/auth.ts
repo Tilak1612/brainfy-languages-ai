@@ -73,12 +73,14 @@ export function useAuth(): AuthState {
 }
 
 /**
- * The learner's name. Falls back to the design's persona in demo mode, so the
- * mock still reads as intended when there is no backend.
+ * The learner's name. Only signed-in users have a real name; the fallback is an
+ * obvious placeholder ("Demo") shown solely in local/preview builds with no
+ * backend. It used to be "Sofia", which external reviewers repeatedly mistook
+ * for a real account or even a tutor — a placeholder should look like one.
  */
 export function useDisplayName(): string {
   const { session } = useAuth();
-  if (!authEnabled) return "Sofia";
+  if (!authEnabled) return "Demo";
   const meta = session?.user?.user_metadata as { display_name?: string } | undefined;
   const name = meta?.display_name || session?.user?.email?.split("@")[0] || "there";
   return name.split(/[\s._-]+/)[0] || "there";
