@@ -27,13 +27,18 @@ export default function TutorAvatar({
 
   return (
     <div
-      className={`flex flex-none items-center justify-center overflow-hidden font-display font-extrabold text-white ${className}`}
+      className={`relative flex flex-none items-center justify-center overflow-hidden font-display font-extrabold text-white ${className}`}
       style={{
         width: size,
         height: size,
         borderRadius: radius,
         background: tutor.grad,
         fontSize: Math.round(size * 0.38),
+        // Understated "AI signature": a faint inner rim-light so the portrait
+        // reads as a crafted avatar, not a raw cutout, and its edge blends into
+        // the tile instead of showing a hard seam. Kept subtle on purpose.
+        boxShadow:
+          "inset 0 1px 1px rgba(255,255,255,.28), inset 0 0 0 1px rgba(255,255,255,.10)",
       }}
     >
       {showImage ? (

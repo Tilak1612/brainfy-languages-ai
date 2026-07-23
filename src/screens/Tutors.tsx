@@ -47,12 +47,18 @@ export default function Tutors({ onNavigate }: { onNavigate: (s: Screen) => void
         {personas.map((t) => (
           <div
             key={t.id}
-            className={`flex flex-col rounded-[22px] border bg-white p-6 transition ${
+            // `group` so the avatar scales and the card lifts together on hover.
+            className={`group flex flex-col rounded-[22px] border bg-white p-6 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_40px_-24px_rgba(38,34,58,.5)] ${
               t.id === active ? "border-brand shadow-[0_0_0_1px_var(--color-brand)]" : "border-[#E7E4DD]"
             }`}
           >
             <div className="mb-4 flex items-center gap-3.5">
-              <TutorAvatar tutor={t} size={58} radius={17} />
+              <TutorAvatar
+                tutor={t}
+                size={78}
+                radius={20}
+                className="transition-transform duration-300 ease-out group-hover:scale-[1.06]"
+              />
               <div className="min-w-0 leading-[1.25]">
                 <div className="flex items-center gap-2">
                   <div className="truncate font-display text-[18px] font-bold">{t.name}</div>
@@ -71,7 +77,7 @@ export default function Tutors({ onNavigate }: { onNavigate: (s: Screen) => void
             <div className="flex gap-2">
               <button
                 onClick={() => start(t)}
-                className="grad-brand flex-1 rounded-xl py-[11px] text-[14px] font-bold text-white transition hover:brightness-[1.06]"
+                className="grad-brand flex-1 rounded-xl py-[11px] text-[14px] font-bold text-white shadow-[0_8px_20px_-12px_rgba(91,75,232,.8)] transition-all duration-300 hover:brightness-[1.08] group-hover:shadow-[0_12px_26px_-10px_rgba(91,75,232,.9)]"
               >
                 Start session
               </button>

@@ -221,7 +221,7 @@ export default function Voice() {
       <div className="relative flex min-h-[420px] flex-col items-center overflow-hidden rounded-[24px] bg-[linear-gradient(160deg,#211f2b,#141319)] p-5 text-white md:min-h-[560px] md:p-[30px]">
         <div className="flex w-full items-center justify-between">
           <div className="flex items-center gap-[11px]">
-            <TutorAvatar tutor={tutor} size={42} radius={13} />
+            <TutorAvatar tutor={tutor} size={46} radius={14} />
             <div className="leading-[1.2]">
               <div className="text-[15px] font-bold">{tutor.name}</div>
               <div className="flex items-center gap-[5px] text-[12px] text-mint">

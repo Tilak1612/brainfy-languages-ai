@@ -136,10 +136,15 @@ export default function Dashboard({ onNavigate }: { onNavigate: (s: Screen) => v
               setActive(t.name);
               onNavigate("voice");
             }}
-            className={`cursor-pointer rounded-[18px] border border-[#E7E4DD] bg-white p-[18px] text-left ${cardHover}`}
+            className={`group cursor-pointer rounded-[18px] border border-[#E7E4DD] bg-white p-[18px] text-left ${cardHover}`}
           >
             <div className="mb-3 flex items-center gap-3">
-              <TutorAvatar tutor={t} size={46} radius={14} />
+              <TutorAvatar
+                tutor={t}
+                size={56}
+                radius={16}
+                className="transition-transform duration-300 ease-out group-hover:scale-[1.06]"
+              />
               <div className="leading-[1.2]">
                 <div className="text-[15px] font-bold">{t.name}</div>
                 <div className="text-[12px] text-muted">{t.role}</div>
