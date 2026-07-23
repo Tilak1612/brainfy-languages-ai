@@ -18,6 +18,9 @@ export const SCREEN_PATHS: Record<Screen, string> = {
   pron: "/pronunciation",
   progress: "/progress",
   tutors: "/tutors",
+  settings: "/settings",
+  privacy: "/privacy",
+  terms: "/terms",
 };
 
 const BY_PATH = new Map<string, Screen>(
@@ -80,6 +83,18 @@ export const SCREEN_META: Record<Screen, Meta> = {
     title: `AI Tutors · ${SITE}`,
     description:
       "Pick a tutor with their own voice, pace and personality, or describe your own and practice with it.",
+  },
+  settings: {
+    title: `Settings · ${SITE}`,
+    description: "Manage your profile, daily goal, privacy, and account.",
+  },
+  privacy: {
+    title: `Privacy Policy · ${SITE}`,
+    description: "What Brainfy Languages AI collects, why, and the choices you have over your data.",
+  },
+  terms: {
+    title: `Terms of Service · ${SITE}`,
+    description: "The terms that govern your use of Brainfy Languages AI.",
   },
 };
 

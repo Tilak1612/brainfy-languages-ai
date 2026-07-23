@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { SearchIcon, FlameIcon, StarIcon, BellIcon } from "./icons";
+import { SearchIcon, FlameIcon, StarIcon, BellIcon, SettingsBurstIcon } from "./icons";
 import { useStore, dueCount } from "../lib/store";
 import { buildIndex, search } from "../lib/search";
 import { useContent } from "../lib/content";
@@ -138,6 +138,16 @@ export default function Topbar({ onNavigate }: { onNavigate: (s: Screen) => void
         <StarIcon size={15} />
         {xp.toLocaleString()}
       </div>
+
+      {/* Settings — the only account entry point on mobile, where the sidebar
+          (and its user menu) is hidden. */}
+      <button
+        onClick={() => onNavigate("settings")}
+        aria-label="Settings"
+        className="flex h-11 w-11 items-center justify-center rounded-[11px] border border-[#E4E1DA] bg-white text-[#4b4842] transition hover:bg-[#f3f1ec] md:h-10 md:w-10"
+      >
+        <SettingsBurstIcon size={18} />
+      </button>
 
       <div ref={bellRef} className="relative">
         <button

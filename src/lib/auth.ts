@@ -12,6 +12,7 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase, authEnabled } from "./supabase";
 import { pull, startSync, stopSync } from "./sync";
 import { resetToDefaults } from "./store";
+import { authHeaders } from "./chat";
 
 export interface AuthState {
   /** undefined = still resolving; null = signed out. */
@@ -105,4 +106,27 @@ export async function signUp(email: string, password: string, displayName: strin
 export async function signOut() {
   if (!supabase) return;
   await supabase.auth.signOut();
+}
+
+/** Update the signed-in user's display name (Supabase user_metadata). */
+export async function updateDisplayName(name: string): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = await supabase.auth.updateUser({ data: { display_name: name } });
+  return !error;
+}
+
+/**
+ * Permanently delete the signed-in user's account and all their data, then sign
+ * out. The actual deletion needs admin rights, so it runs server-side in
+ * /api/delete-account, authenticated by the user's own token. Returns false if
+ * the request failed (leaves the session intact so nothing is half-deleted).
+ */
+export async function deleteAccount(): Promise<boolean> {
+  const r = await fetch("/api/delete-account", {
+    method: "POST",
+    headers: { "content-type": "application/json", ...(await authHeaders()) },
+  });
+  if (!r.ok) return false;
+  await signOut();
+  return true;
 }

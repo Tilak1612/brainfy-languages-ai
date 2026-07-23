@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { Screen } from "../data";
-import { actions, useStore, cefrLevel } from "../lib/store";
+import { useStore, cefrLevel } from "../lib/store";
 import { authEnabled } from "../lib/supabase";
 import { useAuth, signOut } from "../lib/auth";
 import { useBilling, startCheckout, openPortal } from "../lib/billing";
@@ -152,18 +152,12 @@ export default function Sidebar({
               </div>
               <button
                 onClick={() => {
-                  if (
-                    confirm(
-                      "Reset your progress? Your XP, streak and review history will be cleared. This cannot be undone.",
-                    )
-                  ) {
-                    actions.reset();
-                    setMenuOpen(false);
-                  }
+                  onNavigate("settings");
+                  setMenuOpen(false);
                 }}
                 className="w-full border-t border-white/[.08] px-3 py-2 text-left text-[12.5px] font-semibold text-[#e9e7f0] transition hover:bg-white/[.06]"
               >
-                Reset progress
+                Settings
               </button>
               {authEnabled && (
                 <button

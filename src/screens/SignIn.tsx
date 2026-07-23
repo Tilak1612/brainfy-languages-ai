@@ -1,8 +1,9 @@
 import { useState } from "react";
+import type { Screen } from "../data";
 import { BrandLogoIcon, SparkleIcon } from "../components/icons";
 import { signIn, signUp } from "../lib/auth";
 
-export default function SignIn() {
+export default function SignIn({ onNavigate }: { onNavigate: (s: Screen) => void }) {
   const [mode, setMode] = useState<"in" | "up">("in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -135,6 +136,18 @@ export default function SignIn() {
             A new account starts at zero — no streak, no XP. Everything you see after this is
             something you earned.
           </div>
+        </div>
+
+        <div className="mt-6 text-center text-[12px] text-muted">
+          By continuing you agree to our{" "}
+          <button onClick={() => onNavigate("terms")} className="font-semibold text-brand underline underline-offset-2">
+            Terms
+          </button>{" "}
+          and{" "}
+          <button onClick={() => onNavigate("privacy")} className="font-semibold text-brand underline underline-offset-2">
+            Privacy Policy
+          </button>
+          .
         </div>
       </div>
     </div>

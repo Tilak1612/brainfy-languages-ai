@@ -5,7 +5,10 @@ export type Screen =
   | "review"
   | "pron"
   | "progress"
-  | "tutors";
+  | "tutors"
+  | "settings"
+  | "privacy"
+  | "terms";
 
 export interface Tutor {
   initials: string;

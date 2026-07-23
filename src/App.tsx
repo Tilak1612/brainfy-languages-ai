@@ -23,6 +23,8 @@ import Review from "./screens/Review";
 import Pronunciation from "./screens/Pronunciation";
 import Progress from "./screens/Progress";
 import Tutors from "./screens/Tutors";
+import Settings from "./screens/Settings";
+import Legal from "./screens/Legal";
 import NotFound from "./screens/NotFound";
 
 export default function App() {
@@ -61,6 +63,13 @@ export default function App() {
     actions.registerActivity(0);
   }, [ready, signedIn]);
 
+  // Legal pages are PUBLIC — rendered before the auth gate and before the
+  // loading state, so a logged-out visitor or an app-store reviewer can read
+  // them. They also don't need the app shell.
+  if (screen === "privacy" || screen === "terms") {
+    return <Legal kind={screen} onNavigate={navigate} />;
+  }
+
   if (authEnabled && !ready) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-cream text-[14px] text-muted">
@@ -69,7 +78,7 @@ export default function App() {
     );
   }
 
-  if (!signedIn) return <SignIn />;
+  if (!signedIn) return <SignIn onNavigate={navigate} />;
 
   // First run: orient the learner before dropping them on a dashboard of zeros.
   if (!onboarded) {
@@ -99,6 +108,7 @@ export default function App() {
             {screen === "pron" && <Pronunciation />}
             {screen === "progress" && <Progress />}
             {screen === "tutors" && <Tutors onNavigate={navigate} />}
+            {screen === "settings" && <Settings onNavigate={navigate} />}
           </ErrorBoundary>
         </main>
       </div>
